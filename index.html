@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PTE Reading Practice</title>
+    <link rel="stylesheet" href="css/main.css?v=hero-accuracy-only" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand-block">
+        <span class="brand-mark" aria-hidden="true">▰</span>
+        <div>
+        <p class="eyebrow">PTE Reading</p>
+        <h1>PTE Reading Practice</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="open-overview" class="ghost-button" type="button"><span class="nav-icon">⌂</span>总览</button>
+        <div class="type-filter mode-menu header-mode-menu" aria-label="题型选择">
+          <button class="type-filter-button active" data-type-filter="FIB_RW" type="button">
+            <span class="mode-icon">☷</span>
+            <span>FIBRW下拉</span>
+          </button>
+          <button class="type-filter-button" data-type-filter="FIB_R" type="button">
+            <span class="mode-icon">?</span>
+            <span>FIBR拖拽</span>
+          </button>
+        </div>
+        <button id="open-wordbook" class="ghost-button" type="button"><span class="nav-icon">▱</span>我的单词库</button>
+        <button id="reset-records" class="ghost-button danger" type="button"><span class="nav-icon">⌫</span>清空做题记录</button>
+      </div>
+    </header>
+
+    <main id="overview-page" class="overview-page">
+      <section class="overview-hero">
+        <div class="hero-copy">
+        <p class="eyebrow">FOCUS · PRACTICE · IMPROVE</p>
+        <h2>十点半的 <span>PTE</span> 阅读小站</h2>
+        <p>题库、练习记录、核心词汇和错题复盘集中在一个安静的学习工作台。</p>
+        <div class="hero-metrics" aria-label="学习统计">
+          <div class="hero-metric">
+            <span class="metric-icon purple">⌁</span>
+            <strong><span id="overview-fibrw-accuracy-count">0</span>%</strong>
+            <small>FIB-RW 正确率</small>
+          </div>
+          <div class="hero-metric">
+            <span class="metric-icon orange">⌁</span>
+            <strong><span id="overview-fibr-accuracy-count">0</span>%</strong>
+            <small>FIB-R 正确率</small>
+          </div>
+        </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-book">PTE</div>
+          <div class="hero-chart"><span></span><span></span><span></span></div>
+          <div class="hero-bubble">Aa</div>
+        </div>
+      </section>
+
+      <nav class="overview-tabs" aria-label="总览导航">
+        <button class="overview-tab active" type="button">总览</button>
+        <button id="overview-browse-bank" class="overview-tab" type="button">题库浏览</button>
+        <button id="overview-open-wordbook" class="overview-tab" type="button">单词库</button>
+        <button id="overview-open-records" class="overview-tab" type="button">练习记录</button>
+      </nav>
+
+      <section class="overview-panel">
+        <div class="section-head">
+          <div>
+            <h2>学习总览</h2>
+            <p class="item-meta">选择一个模块开始练习或复盘。</p>
+          </div>
+          <div class="mini-actions">
+            <button id="overview-random" class="secondary-button mini-button" type="button">随机练习</button>
+          </div>
+        </div>
+
+        <section class="overview-group">
+          <h3>阅读</h3>
+          <div class="overview-card-grid">
+            <article class="overview-card overview-card-fibrw">
+              <div class="overview-card-icon">▤</div>
+              <div>
+                <h4>FIB-RW 下拉</h4>
+                <p><span id="overview-fibrw-count">0</span> 题</p>
+              </div>
+              <div class="overview-frequency-links" aria-label="FIB-RW 预测频率">
+                <button class="frequency-link-button" id="overview-fibrw-very-high" type="button">
+                  <strong>极高频</strong>
+                  <span><span id="overview-fibrw-very-high-count">0</span> 题</span>
+                </button>
+                <button class="frequency-link-button" id="overview-fibrw-high" type="button">
+                  <strong>高频</strong>
+                  <span><span id="overview-fibrw-high-count">0</span> 题</span>
+                </button>
+                <button class="frequency-link-button" id="overview-fibrw-medium" type="button">
+                  <strong>中频</strong>
+                  <span><span id="overview-fibrw-medium-count">0</span> 题</span>
+                </button>
+              </div>
+              <div class="overview-card-actions">
+                <button class="secondary-button mini-button" id="overview-start-fibrw" type="button">浏览题库</button>
+                <button class="secondary-button mini-button" id="overview-random-fibrw" type="button">随机练习</button>
+              </div>
+            </article>
+
+            <article class="overview-card overview-card-fibr">
+              <div class="overview-card-icon">▦</div>
+              <div>
+                <h4>FIB-R 拖拽</h4>
+                <p><span id="overview-fibr-count">0</span> 题</p>
+              </div>
+              <div class="overview-frequency-links" aria-label="FIB-R 预测频率">
+                <button class="frequency-link-button" id="overview-fibr-very-high" type="button">
+                  <strong>极高频</strong>
+                  <span><span id="overview-fibr-very-high-count">0</span> 题</span>
+                </button>
+                <button class="frequency-link-button" id="overview-fibr-high" type="button">
+                  <strong>高频</strong>
+                  <span><span id="overview-fibr-high-count">0</span> 题</span>
+                </button>
+                <button class="frequency-link-button" id="overview-fibr-medium" type="button">
+                  <strong>中频</strong>
+                  <span><span id="overview-fibr-medium-count">0</span> 题</span>
+                </button>
+              </div>
+              <div class="overview-card-actions">
+                <button class="secondary-button mini-button" id="overview-start-fibr" type="button">浏览题库</button>
+                <button class="secondary-button mini-button" id="overview-random-fibr" type="button">随机练习</button>
+              </div>
+            </article>
+
+            <article class="overview-card overview-card-review">
+              <div class="overview-card-icon">☑</div>
+              <div>
+                <h4>错题复盘</h4>
+                <p><span id="overview-record-count">0</span> 次记录</p>
+              </div>
+              <div class="overview-card-actions">
+                <button class="secondary-button mini-button" id="overview-review-errors" type="button">查看弱项</button>
+                <button class="ghost-button danger mini-button" id="overview-clear-records" type="button">清空做题记录</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="overview-group">
+          <h3>单词</h3>
+          <div class="overview-card-grid">
+            <article class="overview-card overview-card-wordbook">
+              <div class="overview-card-icon">◇</div>
+              <div>
+                <h4>我的单词库</h4>
+                <p><span id="overview-wordbook-count">0</span> 词</p>
+              </div>
+              <div class="overview-card-actions">
+                <button class="secondary-button mini-button" id="overview-wordbook-jump" type="button">查看单词库</button>
+                <button class="secondary-button mini-button" id="overview-wordbook-review" type="button">开始复习</button>
+                <button class="secondary-button mini-button" id="overview-wordbook-export" type="button">导出PDF</button>
+              </div>
+            </article>
+
+            <article class="overview-card overview-card-core">
+              <div class="overview-card-icon">✦</div>
+              <div>
+                <h4>PTE核心词汇</h4>
+                <p><span id="overview-core-count">0</span> 词</p>
+              </div>
+              <div class="overview-card-actions">
+                <button class="secondary-button mini-button" id="overview-core-practice" type="button">查看单词库</button>
+                <button class="secondary-button mini-button" id="overview-core-review" type="button">开始复习</button>
+                <button class="secondary-button mini-button" id="overview-core-export" type="button">导出PDF</button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <main id="practice-page" class="layout hidden">
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>题库</h2>
+          <input id="search-input" class="search-input" type="search" placeholder="搜索题目" />
+          <div class="question-status-filter" aria-label="做题状态筛选">
+            <button class="question-status-button active" data-question-status="all" type="button">全部</button>
+            <button class="question-status-button" data-question-status="done" type="button">已做</button>
+            <button class="question-status-button" data-question-status="undone" type="button">未做</button>
+          </div>
+          <div id="question-list" class="question-list"></div>
+          <div class="pagination" aria-label="题库分页">
+            <button id="prev-page" class="page-button" type="button">上一页</button>
+            <span id="page-info" class="page-info">第 1 / 1 页</span>
+            <button id="next-page" class="page-button" type="button">下一页</button>
+          </div>
+        </section>
+
+      </aside>
+
+      <section class="workspace">
+        <div class="question-toolbar">
+          <div>
+            <p id="question-meta" class="eyebrow"></p>
+            <h2 id="question-title"></h2>
+          </div>
+          <div class="score-pill" id="score-pill">未提交</div>
+        </div>
+
+        <article id="passage" class="passage"></article>
+        <div id="word-card" class="word-card hidden" role="dialog" aria-live="polite"></div>
+
+        <div class="actions">
+          <button id="prev-question" class="secondary-button" type="button">上一题</button>
+          <button id="next-question" class="secondary-button" type="button">下一题</button>
+          <button id="submit-answer" class="primary-button" type="button">提交答案</button>
+          <button id="retry-question" class="secondary-button" type="button">重做本题</button>
+          <button id="toggle-analysis" class="secondary-button" type="button">查看解析与翻译</button>
+        </div>
+
+        <section id="analysis-panel" class="analysis-grid hidden">
+          <div class="panel">
+            <h2>答案解析</h2>
+            <div id="analysis-content" class="rich-text"></div>
+          </div>
+          <div class="panel">
+            <h2>全文翻译</h2>
+            <div id="translation-content" class="rich-text"></div>
+          </div>
+        </section>
+
+        <section id="result-panel" class="result-panel hidden"></section>
+
+        <section id="core-vocab-panel" class="core-vocab-panel panel hidden">
+          <div class="section-head">
+            <div>
+              <h2>本题PTE核心词汇</h2>
+              <p id="core-vocab-count" class="item-meta"></p>
+            </div>
+            <div class="mini-actions">
+              <button id="vocab-select-all" class="secondary-button mini-button" type="button">全选</button>
+              <button id="vocab-clear-selection" class="secondary-button mini-button" type="button">清空选择</button>
+              <button id="vocab-add-selected" class="primary-button mini-button" type="button">加入单词库</button>
+              <button id="vocab-export" class="secondary-button mini-button" type="button">导出PDF</button>
+            </div>
+          </div>
+          <div id="core-vocab-list" class="core-vocab-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <main id="review-page" class="standalone-page hidden">
+      <section class="standalone-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">REVIEW</p>
+            <h2>错题复盘</h2>
+            <p class="item-meta">先选择题型，再查看该题型下错得最多的考点。</p>
+          </div>
+          <button id="review-back-practice" class="secondary-button mini-button" type="button">返回题库练习</button>
+        </div>
+        <div class="review-choice-grid">
+          <button id="review-open-fibrw" class="review-choice-card" type="button">
+            <strong>FIB-RW 下拉</strong>
+            <span id="review-fibrw-summary">0 次记录</span>
+          </button>
+          <button id="review-open-fibr" class="review-choice-card" type="button">
+            <strong>FIB-R 拖拽</strong>
+            <span id="review-fibr-summary">0 次记录</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <main id="review-type-page" class="standalone-page hidden">
+      <section class="standalone-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">REVIEW</p>
+            <h2 id="review-type-title">错题复盘</h2>
+            <p id="review-type-summary" class="item-meta"></p>
+          </div>
+          <button id="review-type-back" class="secondary-button mini-button" type="button">返回题型选择</button>
+        </div>
+        <section class="panel">
+          <h2>弱项考点</h2>
+          <div id="review-weakness-list" class="weakness-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <main id="review-detail-page" class="standalone-page hidden">
+      <section class="standalone-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">REVIEW DETAIL</p>
+            <h2 id="review-detail-title">考点复盘</h2>
+            <p id="review-detail-summary" class="item-meta"></p>
+          </div>
+          <button id="review-detail-back" class="secondary-button mini-button" type="button">返回错题复盘</button>
+        </div>
+        <div class="review-detail-grid">
+          <section class="panel">
+            <h2>这个考点下的错题</h2>
+            <div id="review-wrong-question-list" class="wordbook-list"></div>
+            <div class="pagination standalone-pagination" aria-label="错题分页">
+              <button id="review-wrong-prev-page" class="page-button" type="button">上一页</button>
+              <span id="review-wrong-page-info" class="page-info">第 1 / 1 页</span>
+              <button id="review-wrong-next-page" class="page-button" type="button">下一页</button>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="section-head compact">
+              <h2>包含这个考点的题</h2>
+              <div class="review-filter-tabs" aria-label="题目完成状态筛选">
+                <button id="review-related-all" class="mini-button secondary-button active" type="button" data-review-status="all">全部</button>
+                <button id="review-related-done" class="mini-button secondary-button" type="button" data-review-status="done">已做</button>
+                <button id="review-related-undone" class="mini-button secondary-button" type="button" data-review-status="undone">未做</button>
+              </div>
+            </div>
+            <div id="review-related-question-list" class="wordbook-list"></div>
+            <div class="pagination standalone-pagination" aria-label="包含题分页">
+              <button id="review-related-prev-page" class="page-button" type="button">上一页</button>
+              <span id="review-related-page-info" class="page-info">第 1 / 1 页</span>
+              <button id="review-related-next-page" class="page-button" type="button">下一页</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <main id="core-vocab-page" class="standalone-page hidden">
+      <section class="standalone-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">CORE VOCAB</p>
+            <h2>PTE核心词汇</h2>
+            <p class="item-meta">独立查看和检索核心词汇，不进入具体练习题。</p>
+          </div>
+          <div class="mini-actions">
+            <button id="core-vocab-export" class="secondary-button mini-button" type="button">导出PDF</button>
+            <button id="core-vocab-back-practice" class="secondary-button mini-button" type="button">返回题库练习</button>
+          </div>
+        </div>
+        <input id="core-vocab-search-input" class="search-input standalone-search" type="search" placeholder="搜索英文单词或中文释义" />
+        <p id="core-vocab-due-count" class="vocab-due-count">今日待复习：0 个</p>
+        <div class="mini-actions standalone-actions review-start-controls">
+          <input id="core-vocab-review-start-word" class="review-start-input" type="search" placeholder="从哪个单词开始，可不填" />
+          <button id="core-vocab-start-review" class="primary-button mini-button" type="button">开始认词复习</button>
+          <button id="core-vocab-start-review-all" class="secondary-button mini-button" type="button">复习全部</button>
+        </div>
+        <div id="core-vocab-page-list" class="dictionary-grid"></div>
+        <div class="pagination standalone-pagination" aria-label="核心词汇分页">
+          <button id="core-vocab-prev-page" class="page-button" type="button">上一页</button>
+          <span id="core-vocab-page-info" class="page-info">第 1 / 1 页</span>
+          <button id="core-vocab-next-page" class="page-button" type="button">下一页</button>
+        </div>
+      </section>
+    </main>
+
+    <main id="wordbook-page" class="standalone-page hidden">
+      <section class="standalone-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">WORDBOOK</p>
+            <h2>我的单词库</h2>
+            <p class="item-meta">独立查看已加入的单词，不进入具体练习题。</p>
+          </div>
+          <div class="mini-actions">
+            <button id="wordbook-page-export" class="secondary-button mini-button" type="button">导出PDF</button>
+            <button id="wordbook-page-clear" class="ghost-button danger mini-button" type="button">清空</button>
+            <button id="wordbook-back-practice" class="secondary-button mini-button" type="button">返回题库练习</button>
+          </div>
+        </div>
+        <p id="wordbook-due-count" class="vocab-due-count">今日待复习：0 个</p>
+        <div class="mini-actions standalone-actions review-start-controls">
+          <input id="wordbook-review-start-word" class="review-start-input" type="search" placeholder="从哪个单词开始，可不填" />
+          <button id="wordbook-start-review" class="primary-button mini-button" type="button">开始认词复习</button>
+          <button id="wordbook-start-review-all" class="secondary-button mini-button" type="button">复习全部</button>
+        </div>
+        <div id="wordbook-page-list" class="wordbook-list standalone-list"></div>
+      </section>
+    </main>
+
+    <main id="vocab-review-page" class="standalone-page hidden">
+      <section class="standalone-panel vocab-review-shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">VOCAB REVIEW</p>
+            <h2 id="vocab-review-title">认词复习</h2>
+            <p id="vocab-review-summary" class="item-meta"></p>
+          </div>
+          <button id="vocab-review-back" class="secondary-button mini-button" type="button">返回词库</button>
+        </div>
+        <div class="vocab-review-plan" aria-label="复习计划规则">
+          <span><b>认识</b>7天后再复习</span>
+          <span><b>模糊</b>1天后再复习</span>
+          <span><b>不认识</b>10分钟后再复习</span>
+        </div>
+        <section id="vocab-review-card" class="vocab-review-card"></section>
+      </section>
+    </main>
+
+    <div id="teacher-mode-indicator" class="teacher-mode-indicator hidden">
+      <strong>教师词库编辑模式</strong>
+      <span>点击正文单词加入PTE核心词汇。</span>
+      <button id="teacher-export-vocab" class="mini-button secondary-button" type="button">导出新增词库</button>
+    </div>
+    <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="data/wordlists/local_dictionary.js"></script>
+    <script src="data/wordlists/ielts_core_vocab.js"></script>
+    <script src="data/questions.js?v=fibrw-may-frequency"></script>
+    <script src="js/app.js?v=hero-accuracy-only"></script>
+  </body>
+</html>

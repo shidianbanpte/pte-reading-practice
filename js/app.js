@@ -48,7 +48,7 @@ async function init() {
     state.customCoreWords = loadTeacherWordMap(CUSTOM_CORE_STORAGE_KEY);
     state.vocabReviewRecords = loadVocabReviewRecords();
     state.submittedQuestionIds = new Set(state.records.map((record) => record.questionId));
-    const data = window.PTE_QUESTIONS_DATA || (await loadQuestionsJson());
+    const data = window.PTE_QUESTIONS_DATA || window.QUESTIONS || (await loadQuestionsJson());
     state.questions = data.questions || [];
     state.currentId = state.questions[0]?.id || null;
     renderAll();

@@ -666,6 +666,19 @@ select {
   border-color: #f2d8a6;
 }
 
+.option-vocab-panel {
+  background: #f5fbff;
+  border-color: #b9d9ec;
+}
+
+.option-vocab-panel .core-vocab-item {
+  border-color: #b9d9ec;
+}
+
+.option-vocab-panel .core-vocab-item strong {
+  color: #155f7d;
+}
+
 .panel.focus-pulse {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.18), var(--shadow);

@@ -5,6 +5,54 @@ const VOCAB_REVIEW_STORAGE_KEY = "pte_reading_practice_vocab_review_v1";
 const QUESTION_PAGE_SIZE = 12;
 const VOCAB_PAGE_SIZE = 60;
 const REVIEW_DETAIL_PAGE_SIZE = 10;
+const OPTION_VOCAB_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "been",
+  "being",
+  "by",
+  "can",
+  "could",
+  "did",
+  "do",
+  "does",
+  "for",
+  "from",
+  "had",
+  "has",
+  "have",
+  "he",
+  "her",
+  "his",
+  "in",
+  "is",
+  "it",
+  "its",
+  "may",
+  "might",
+  "not",
+  "of",
+  "on",
+  "or",
+  "should",
+  "that",
+  "the",
+  "their",
+  "there",
+  "they",
+  "this",
+  "to",
+  "was",
+  "were",
+  "will",
+  "with",
+  "would",
+]);
 
 const state = {
   questions: [],
@@ -27,6 +75,7 @@ const state = {
   coreVocabPage: 1,
   teacherMode: false,
   currentCoreVocabulary: [],
+  currentOptionVocabulary: [],
   currentAttemptSubmitted: false,
   reviewTypeFilter: "FIB_RW",
   reviewDetailLabel: "",
@@ -181,6 +230,13 @@ function bindElements() {
     "vocab-clear-selection",
     "vocab-add-selected",
     "vocab-export",
+    "option-vocab-panel",
+    "option-vocab-count",
+    "option-vocab-list",
+    "option-vocab-select-all",
+    "option-vocab-clear-selection",
+    "option-vocab-add-selected",
+    "option-vocab-export",
     "analysis-panel",
     "analysis-content",
     "translation-content",
@@ -247,6 +303,10 @@ function bindEvents() {
   on("vocab-clear-selection", "click", () => setCoreVocabSelection(false));
   on("vocab-add-selected", "click", addSelectedCoreWords);
   on("vocab-export", "click", exportWordbook);
+  on("option-vocab-select-all", "click", () => setOptionVocabSelection(true));
+  on("option-vocab-clear-selection", "click", () => setOptionVocabSelection(false));
+  on("option-vocab-add-selected", "click", addSelectedOptionWords);
+  on("option-vocab-export", "click", exportOptionVocabulary);
   on("toggle-analysis", "click", () => {
     const isHidden = els["analysis-panel"].classList.toggle("hidden");
     if (isHidden) {
@@ -678,6 +738,7 @@ function renderQuestion(question) {
   state.currentAttemptSubmitted = false;
   preparePassageLookup(question);
   hideCoreVocabulary();
+  hideOptionVocabulary();
   els["analysis-content"].innerHTML = renderAnalysisHtml(question);
   els["translation-content"].innerHTML = question.translation_html;
   decorateAnalysisText();
@@ -923,6 +984,7 @@ function submitCurrentQuestion() {
   state.currentAttemptSubmitted = true;
   preparePassageLookup(question);
   renderCoreVocabulary(question);
+  renderOptionVocabulary(question);
   renderResult(record);
   showAnalysisPanel();
   renderWeaknessList();
@@ -1056,6 +1118,86 @@ function hideCoreVocabulary() {
   }
 }
 
+function renderOptionVocabulary(question) {
+  if (!question || !els["option-vocab-panel"]) return;
+  const optionMap = new Map();
+  getOptionVocabularyWords(question).forEach((optionWord) => {
+    const key = normalizeLookupWord(optionWord);
+    if (!key || optionMap.has(key)) return;
+    const entry = normalizeOptionVocabEntry(findWordEntry(key) || { word: key, meaning: "", phonetic: "" });
+    if (!isUsefulOptionVocabEntry(entry)) return;
+    optionMap.set(key, {
+      entry,
+      count: 1,
+      forms: new Set([optionWord]),
+    });
+  });
+
+  const words = Array.from(optionMap.values()).sort((a, b) => {
+    const aSaved = state.wordbook.has(String(a.entry.word).toLowerCase()) ? 1 : 0;
+    const bSaved = state.wordbook.has(String(b.entry.word).toLowerCase()) ? 1 : 0;
+    return bSaved - aSaved || a.entry.word.localeCompare(b.entry.word);
+  });
+  state.currentOptionVocabulary = words;
+
+  if (!words.length) {
+    hideOptionVocabulary();
+    return;
+  }
+
+  const savedCount = words.filter((item) => state.wordbook.has(String(item.entry.word).toLowerCase())).length;
+  els["option-vocab-count"].textContent = `共 ${words.length} 个选项词，已加入 ${savedCount} 个。`;
+  els["option-vocab-list"].innerHTML = words.map(renderCoreVocabItem).join("");
+  els["option-vocab-panel"].classList.remove("hidden");
+}
+
+function getOptionVocabularyWords(question) {
+  const seen = new Set();
+  const words = [];
+  getQuestionOptionPool(question).forEach((option) => {
+    const matches = String(option || "").match(/[A-Za-z][A-Za-z'-]*/g) || [];
+    matches.forEach((match) => {
+      const word = normalizeLookupWord(match);
+      if (!word || OPTION_VOCAB_STOPWORDS.has(word) || seen.has(word)) return;
+      seen.add(word);
+      words.push(match);
+    });
+  });
+  return words;
+}
+
+function normalizeOptionVocabEntry(entry) {
+  const normalized = normalizeVocabReviewEntry(entry);
+  if (normalized.meaning) return normalized;
+  const fallbackMeaning = cleanOptionMeaning(entry?.meaning || "");
+  return {
+    ...normalized,
+    meaning: fallbackMeaning,
+  };
+}
+
+function cleanOptionMeaning(value) {
+  return String(value || "")
+    .replace(/\\n/g, "\n")
+    .split(/\n+/)
+    .map((line) => line.trim().replace(/^\[[^\]]+\]\s*/, ""))
+    .filter((line) => /[\u4e00-\u9fff]/.test(line))
+    .join("\n");
+}
+
+function isUsefulOptionVocabEntry(entry) {
+  const meaning = cleanMeaning(entry?.meaning || "").trim();
+  if (!meaning) return false;
+  return !/(?:\[\s*常\s*pl\.?\s*\]|\[\s*pl\.?\s*\]|(?:^|[;；,，\s])pl\.(?=\s|[;；,，]))/i.test(meaning);
+}
+
+function hideOptionVocabulary() {
+  state.currentOptionVocabulary = [];
+  if (els["option-vocab-panel"]) {
+    els["option-vocab-panel"].classList.add("hidden");
+  }
+}
+
 function setCoreVocabSelection(checked) {
   els["core-vocab-list"].querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
     checkbox.checked = checked;
@@ -1071,6 +1213,30 @@ function addSelectedCoreWords() {
   renderWordbook();
   renderOverview();
   renderCoreVocabulary(getCurrentQuestion());
+}
+
+function setOptionVocabSelection(checked) {
+  els["option-vocab-list"].querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = checked;
+  });
+}
+
+function addSelectedOptionWords() {
+  const selected = Array.from(els["option-vocab-list"].querySelectorAll('input[type="checkbox"]:checked'))
+    .map((checkbox) => checkbox.dataset.word)
+    .filter(Boolean);
+  selected.forEach((word) => state.wordbook.add(word));
+  saveWordbook();
+  renderWordbook();
+  renderOverview();
+  const question = getCurrentQuestion();
+  renderCoreVocabulary(question);
+  renderOptionVocabulary(question);
+}
+
+function exportOptionVocabulary() {
+  const entries = state.currentOptionVocabulary.map((item) => item.entry);
+  exportVocabPdf("本题选项词汇", entries, "pte-option-vocab");
 }
 
 function exportWordbook() {
@@ -1230,9 +1396,12 @@ function showWordCard(wordKey, displayWord, anchor, coreWordKey = "") {
 }
 
 function findWordEntry(wordKey) {
-  return getLookupCandidates(wordKey)
+  const entries = getLookupCandidates(wordKey)
     .map((candidate) => state.coreWordIndex.get(candidate) || state.wordIndex.get(candidate))
-    .find(Boolean);
+    .filter(Boolean);
+  return entries.find((entry) => /[\u4e00-\u9fff]/.test(cleanMeaning(entry.meaning || "")))
+    || entries.find((entry) => cleanMeaning(entry.meaning || "").trim())
+    || entries[0];
 }
 
 function findCoreWordEntry(wordKey) {

@@ -2,6 +2,10 @@ const STORAGE_KEY = "pte_reading_practice_records_v1";
 const VOCAB_STORAGE_KEY = "pte_reading_practice_vocab_bank_v1";
 const CUSTOM_CORE_STORAGE_KEY = "pte_reading_practice_teacher_pte_core_v1";
 const VOCAB_REVIEW_STORAGE_KEY = "pte_reading_practice_vocab_review_v1";
+const ACCESS_STORAGE_KEY = "pte_reading_practice_access_v1";
+const ACCESS_GATE_ENABLED = false;
+const TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
+const ACCESS_UNLOCK_CODES = ["PTE2026"];
 const QUESTION_PAGE_SIZE = 12;
 const VOCAB_PAGE_SIZE = 60;
 const REVIEW_DETAIL_PAGE_SIZE = 10;
@@ -53,6 +57,9 @@ const OPTION_VOCAB_STOPWORDS = new Set([
   "with",
   "would",
 ]);
+const VOCAB_PHONETIC_FALLBACKS = {
+  contrary: "/ˈkɒntrəri/",
+};
 
 const state = {
   questions: [],
@@ -72,11 +79,19 @@ const state = {
   vocabReviewQueue: [],
   vocabReviewIndex: 0,
   vocabReviewRevealed: false,
+  vocabReviewLastSpokenWord: "",
+  selectedCoreVocabWord: "",
+  selectedWordbookWord: "",
+  wordbookEditMode: false,
   coreVocabPage: 1,
   teacherMode: false,
   currentCoreVocabulary: [],
   currentOptionVocabulary: [],
   currentAttemptSubmitted: false,
+  practiceLabelFilter: "",
+  practiceLabelType: "",
+  practiceQuestionIds: [],
+  practiceContextText: "",
   reviewTypeFilter: "FIB_RW",
   reviewDetailLabel: "",
   reviewRelatedStatus: "all",
@@ -92,6 +107,7 @@ async function init() {
   try {
     bindElements();
     bindEvents();
+    if (!ensureAccessAllowed()) return;
     state.records = loadRecords();
     state.wordbook = loadWordbook();
     state.customCoreWords = loadTeacherWordMap(CUSTOM_CORE_STORAGE_KEY);
@@ -109,6 +125,89 @@ async function init() {
 async function loadQuestionsJson() {
   const response = await fetch("data/questions.json");
   return response.json();
+}
+
+function loadAccessState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ACCESS_STORAGE_KEY) || "{}");
+    return saved && typeof saved === "object" ? saved : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveAccessState(accessState) {
+  try {
+    localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(accessState));
+  } catch (error) {
+    console.warn("无法保存试用状态。", error);
+  }
+}
+
+function getTrialDaysLeft(startedAt, now = Date.now()) {
+  const expiresAt = Number(startedAt || 0) + TRIAL_DURATION_MS;
+  return Math.max(0, Math.ceil((expiresAt - now) / (24 * 60 * 60 * 1000)));
+}
+
+function ensureAccessAllowed() {
+  if (!ACCESS_GATE_ENABLED) {
+    hideAccessGate();
+    return true;
+  }
+
+  const now = Date.now();
+  const accessState = loadAccessState();
+
+  if (accessState.unlocked) {
+    hideAccessGate();
+    return true;
+  }
+
+  if (!accessState.trialStartedAt) {
+    accessState.trialStartedAt = now;
+    saveAccessState(accessState);
+  }
+
+  const trialExpiresAt = Number(accessState.trialStartedAt) + TRIAL_DURATION_MS;
+  if (now < trialExpiresAt) {
+    hideAccessGate();
+    return true;
+  }
+
+  showAccessGate(accessState);
+  return false;
+}
+
+function showAccessGate(accessState = loadAccessState()) {
+  if (!els["access-gate"]) return;
+  document.body.classList.add("access-locked");
+  els["access-gate"].classList.remove("hidden");
+  setText("access-trial-status", `本设备 3 天试用期已结束。请输入验证码继续使用。`);
+  setText("access-code-message", "");
+  els["access-code-input"]?.focus();
+}
+
+function hideAccessGate() {
+  document.body.classList.remove("access-locked");
+  els["access-gate"]?.classList.add("hidden");
+}
+
+function submitAccessCode() {
+  const input = els["access-code-input"];
+  const code = (input?.value || "").trim().toUpperCase();
+  const validCodes = new Set(ACCESS_UNLOCK_CODES.map((item) => item.trim().toUpperCase()));
+  if (!validCodes.has(code)) {
+    setText("access-code-message", "验证码不正确，请重新输入。");
+    input?.select();
+    return;
+  }
+
+  const accessState = loadAccessState();
+  accessState.unlocked = true;
+  accessState.unlockedAt = Date.now();
+  saveAccessState(accessState);
+  hideAccessGate();
+  window.location.reload();
 }
 
 function bindElements() {
@@ -161,6 +260,7 @@ function bindElements() {
     "prev-page",
     "next-page",
     "page-info",
+    "practice-context",
     "weakness-list",
     "review-open-fibrw",
     "review-open-fibr",
@@ -196,8 +296,10 @@ function bindElements() {
     "core-vocab-review-start-word",
     "core-vocab-due-count",
     "core-vocab-export",
+    "core-vocab-detail",
     "wordbook-list",
     "wordbook-page-list",
+    "wordbook-page-edit",
     "wordbook-clear",
     "wordbook-page-clear",
     "wordbook-page-export",
@@ -206,6 +308,7 @@ function bindElements() {
     "wordbook-review-start-word",
     "wordbook-due-count",
     "wordbook-back-practice",
+    "wordbook-detail",
     "vocab-review-title",
     "vocab-review-summary",
     "vocab-review-card",
@@ -244,12 +347,21 @@ function bindElements() {
     "teacher-mode-indicator",
     "teacher-export-vocab",
     "app-toast",
+    "access-gate",
+    "access-trial-status",
+    "access-code-input",
+    "access-code-submit",
+    "access-code-message",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
 }
 
 function bindEvents() {
+  on("access-code-submit", "click", submitAccessCode);
+  on("access-code-input", "keydown", (event) => {
+    if (event.key === "Enter") submitAccessCode();
+  });
   on("search-input", "input", () => {
     state.questionPage = 1;
     renderQuestionList();
@@ -268,6 +380,7 @@ function bindEvents() {
   });
   document.querySelectorAll(".type-filter-button").forEach((button) => {
     button.addEventListener("click", () => {
+      clearPracticeLabelFilter();
       showPractice();
       state.typeFilter = button.dataset.typeFilter || "ALL";
       state.frequencyFilter = null;
@@ -282,6 +395,14 @@ function bindEvents() {
   document.querySelectorAll(".question-status-button").forEach((button) => {
     button.addEventListener("click", () => {
       state.questionStatusFilter = button.dataset.questionStatus || "all";
+      state.questionPage = 1;
+      ensureCurrentQuestionInFilter();
+      renderAll();
+    });
+  });
+  document.querySelectorAll(".question-frequency-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.frequencyFilter = button.dataset.questionFrequency || null;
       state.questionPage = 1;
       ensureCurrentQuestionInFilter();
       renderAll();
@@ -317,9 +438,14 @@ function bindEvents() {
   });
   on("reset-records", "click", resetRecords);
   on("wordbook-clear", "click", clearWordbook);
+  on("wordbook-page-edit", "click", toggleWordbookEditMode);
   on("open-overview", "click", showOverview);
   on("open-wordbook", "click", showWordbookPage);
-  on("overview-browse-bank", "click", showPractice);
+  on("overview-browse-bank", "click", () => {
+    clearPracticeLabelFilter();
+    showPractice();
+    renderAll();
+  });
   on("overview-open-wordbook", "click", showWordbookPage);
   on("overview-open-records", "click", showReviewPage);
   on("overview-random", "click", () => startRandomQuestion());
@@ -341,7 +467,11 @@ function bindEvents() {
   on("overview-core-practice", "click", showCoreVocabPage);
   on("overview-core-review", "click", () => startVocabReview("core"));
   on("overview-core-export", "click", () => exportVocabList("core"));
-  on("review-back-practice", "click", showPractice);
+  on("review-back-practice", "click", () => {
+    clearPracticeLabelFilter();
+    showPractice();
+    renderAll();
+  });
   on("review-open-fibrw", "click", () => showReviewTypePage("FIB_RW"));
   on("review-open-fibr", "click", () => showReviewTypePage("FIB_R"));
   on("review-type-back", "click", showReviewPage);
@@ -369,11 +499,19 @@ function bindEvents() {
     state.reviewRelatedPage += 1;
     renderReviewDetail(state.reviewDetailLabel);
   });
-  on("core-vocab-back-practice", "click", showPractice);
+  on("core-vocab-back-practice", "click", () => {
+    clearPracticeLabelFilter();
+    showPractice();
+    renderAll();
+  });
   on("core-vocab-start-review", "click", () => startVocabReview("core", getReviewStartWord("core")));
   on("core-vocab-start-review-all", "click", () => startVocabReview("core", getReviewStartWord("core"), { includeAll: true }));
   on("core-vocab-export", "click", () => exportVocabList("core"));
-  on("wordbook-back-practice", "click", showPractice);
+  on("wordbook-back-practice", "click", () => {
+    clearPracticeLabelFilter();
+    showPractice();
+    renderAll();
+  });
   on("wordbook-page-export", "click", exportWordbook);
   on("wordbook-page-clear", "click", clearWordbook);
   on("wordbook-start-review", "click", () => startVocabReview("wordbook", getReviewStartWord("wordbook")));
@@ -438,6 +576,7 @@ function ensureCurrentQuestionInFilter() {
 
 function renderQuestionList() {
   const questions = getFilteredQuestions();
+  renderPracticeContext();
   const totalPages = Math.max(1, Math.ceil(questions.length / QUESTION_PAGE_SIZE));
   state.questionPage = Math.min(Math.max(1, state.questionPage), totalPages);
   const startIndex = (state.questionPage - 1) * QUESTION_PAGE_SIZE;
@@ -478,16 +617,23 @@ function renderQuestionList() {
   });
   updateTypeFilterButtons();
   updateQuestionStatusButtons();
+  updateQuestionFrequencyButtons();
 }
 
 function getFilteredQuestions() {
   const keyword = els["search-input"].value.trim().toLowerCase();
-  return state.questions.filter((question) => {
+  const practiceIdOrder = new Map(state.practiceQuestionIds.map((id, index) => [id, index]));
+  const questions = state.questions.filter((question) => {
     const questionNumber = String(question.question_id || "");
     const searchableText = `${questionNumber} ${questionNumber}. ${question.title || ""}`.toLowerCase();
     const matchesKeyword = !keyword || searchableText.includes(keyword);
+    const matchesPracticeSet = !practiceIdOrder.size || practiceIdOrder.has(question.id);
     const matchesType = question.type === state.typeFilter;
     const matchesFrequency = !state.frequencyFilter || question.frequency === state.frequencyFilter;
+    const matchesPracticeLabel =
+      !state.practiceLabelFilter ||
+      ((state.practiceLabelType ? question.type === state.practiceLabelType : true) &&
+        question.blanks.some((blank) => blank.label === state.practiceLabelFilter));
     const isDone = state.submittedQuestionIds.has(question.id);
     const matchesStatus =
       state.questionStatusFilter === "done"
@@ -495,8 +641,30 @@ function getFilteredQuestions() {
         : state.questionStatusFilter === "undone"
           ? !isDone
           : true;
-    return matchesKeyword && matchesType && matchesFrequency && matchesStatus;
-  }).sort(compareQuestionsByFrequency);
+    return matchesKeyword && matchesPracticeSet && matchesType && matchesFrequency && matchesPracticeLabel && matchesStatus;
+  });
+  if (practiceIdOrder.size) {
+    return questions.sort((a, b) => (practiceIdOrder.get(a.id) ?? 0) - (practiceIdOrder.get(b.id) ?? 0));
+  }
+  return questions.sort(compareQuestionsByFrequency);
+}
+
+function clearPracticeLabelFilter() {
+  state.practiceLabelFilter = "";
+  state.practiceLabelType = "";
+  state.practiceQuestionIds = [];
+  state.practiceContextText = "";
+}
+
+function renderPracticeContext() {
+  if (!els["practice-context"]) return;
+  if (!state.practiceContextText) {
+    els["practice-context"].classList.add("hidden");
+    els["practice-context"].textContent = "";
+    return;
+  }
+  els["practice-context"].classList.remove("hidden");
+  els["practice-context"].textContent = state.practiceContextText;
 }
 
 function updateTypeFilterButtons() {
@@ -509,6 +677,12 @@ function updateTypeFilterButtons() {
 function updateQuestionStatusButtons() {
   document.querySelectorAll(".question-status-button").forEach((button) => {
     button.classList.toggle("active", (button.dataset.questionStatus || "all") === state.questionStatusFilter);
+  });
+}
+
+function updateQuestionFrequencyButtons() {
+  document.querySelectorAll(".question-frequency-button").forEach((button) => {
+    button.classList.toggle("active", (button.dataset.questionFrequency || null) === state.frequencyFilter);
   });
 }
 
@@ -593,6 +767,7 @@ function showOnlyPage(activeId) {
 }
 
 function startQuestionType(type) {
+  clearPracticeLabelFilter();
   state.typeFilter = type;
   state.frequencyFilter = null;
   state.questionPage = 1;
@@ -602,6 +777,7 @@ function startQuestionType(type) {
 }
 
 function startQuestionSet(type, frequency) {
+  clearPracticeLabelFilter();
   state.typeFilter = type;
   state.frequencyFilter = frequency;
   state.questionPage = 1;
@@ -611,6 +787,7 @@ function startQuestionSet(type, frequency) {
 }
 
 function startRandomQuestion(type = state.typeFilter, frequency = null) {
+  clearPracticeLabelFilter();
   state.typeFilter = type;
   state.frequencyFilter = frequency;
   const questions = state.questions.filter((question) => {
@@ -1462,6 +1639,13 @@ function speakWord(word) {
   window.speechSynthesis.speak(utterance);
 }
 
+function autoSpeakReviewWord(word) {
+  const normalized = normalizeLookupWord(word);
+  if (!normalized || state.vocabReviewLastSpokenWord === normalized) return;
+  state.vocabReviewLastSpokenWord = normalized;
+  window.setTimeout(() => speakWord(normalized), 220);
+}
+
 function normalizeLookupWord(value) {
   return String(value || "").toLowerCase().replace(/^'+|'+$/g, "");
 }
@@ -1816,6 +2000,7 @@ function renderReviewQuestionList(targetId, rows, emptyText, pager = null) {
     return;
   }
   const pageRows = rows.slice((page - 1) * REVIEW_DETAIL_PAGE_SIZE, page * REVIEW_DETAIL_PAGE_SIZE);
+  const rowIds = rows.map((item) => item.id);
   target.innerHTML = pageRows
     .map((item) => `
       <button class="review-question-item" data-id="${escapeHtml(item.id)}" type="button">
@@ -1825,7 +2010,7 @@ function renderReviewQuestionList(targetId, rows, emptyText, pager = null) {
     `)
     .join("");
   target.querySelectorAll(".review-question-item").forEach((button) => {
-    button.addEventListener("click", () => openQuestionFromReview(button.dataset.id));
+    button.addEventListener("click", () => openQuestionFromReview(button.dataset.id, rowIds, targetId));
   });
 }
 
@@ -1842,15 +2027,33 @@ function updateReviewListPager(pager, page, totalPages, totalRows) {
   }
 }
 
-function openQuestionFromReview(questionId) {
+function openQuestionFromReview(questionId, questionIds = [], sourceListId = "") {
   const question = state.questions.find((item) => item.id === questionId);
   if (!question) return;
   state.typeFilter = question.type;
   state.frequencyFilter = null;
+  state.questionStatusFilter = sourceListId === "review-related-question-list" ? state.reviewRelatedStatus : "all";
+  state.practiceLabelFilter = state.reviewDetailLabel || "";
+  state.practiceLabelType = state.reviewTypeFilter || question.type;
+  state.practiceQuestionIds = Array.from(new Set(questionIds.filter(Boolean)));
+  if (els["search-input"]) {
+    els["search-input"].value = "";
+  }
+  const statusText =
+    sourceListId === "review-related-question-list"
+      ? getReviewRelatedStatusText(state.reviewRelatedStatus)
+      : "错题";
+  state.practiceContextText = `${state.practiceLabelFilter} · ${statusText} · ${state.practiceQuestionIds.length || 1} 题`;
   state.currentId = question.id;
   moveQuestionIntoCurrentPage(question.id);
   showPractice();
   renderAll();
+}
+
+function getReviewRelatedStatusText(status) {
+  if (status === "done") return "已做题";
+  if (status === "undone") return "未做题";
+  return "全部题";
 }
 
 function renderCoreVocabPage() {
@@ -1877,12 +2080,14 @@ function renderCoreVocabPage() {
 
   els["core-vocab-page-list"].innerHTML = entries
     .map((entry) => `
-      <div class="dictionary-item">
+      <button class="dictionary-item vocab-entry-button" type="button" data-vocab-source="core" data-word="${escapeHtml(entry.word || "")}">
         <strong>${escapeHtml(entry.word || "")}</strong>
         <span>${escapeHtml(cleanMainMeaning(entry.meaning) || cleanMeaning(entry.meaning) || "暂无释义")}</span>
-      </div>
+      </button>
     `)
     .join("");
+  bindVocabEntryButtons(els["core-vocab-page-list"]);
+  renderVocabDetail("core");
   updateCoreVocabPagination(allEntries.length, totalPages);
 }
 
@@ -1903,6 +2108,7 @@ function startVocabReview(source, startWord = "", options = {}) {
   state.vocabReviewQueue = buildVocabReviewQueue(state.vocabReviewSource, options);
   state.vocabReviewIndex = getVocabReviewStartIndex(state.vocabReviewQueue, startWord);
   state.vocabReviewRevealed = false;
+  state.vocabReviewLastSpokenWord = "";
   renderVocabReview();
   showOnlyPage("vocab-review-page");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1940,14 +2146,20 @@ function backFromVocabReview() {
 function buildVocabReviewQueue(source, options = {}) {
   const now = Date.now();
   const entries = getVocabReviewEntries(source);
-  return entries
+  const reviewItems = entries
     .map((entry) => {
       const record = state.vocabReviewRecords[entry.word] || {};
       const nextTime = record.nextReview ? new Date(record.nextReview).getTime() : 0;
       const dueRank = !record.nextReview || nextTime <= now ? 0 : 1;
       return { entry, record, dueRank, nextTime: nextTime || now };
     })
-    .filter((item) => options.includeAll || item.dueRank === 0)
+    .filter((item) => options.includeAll || item.dueRank === 0);
+  if (options.includeAll) {
+    return reviewItems
+      .sort((a, b) => a.entry.word.localeCompare(b.entry.word))
+      .map((item) => item.entry);
+  }
+  return reviewItems
     .sort((a, b) => a.dueRank - b.dueRank || a.nextTime - b.nextTime || a.entry.word.localeCompare(b.entry.word))
     .map((item) => item.entry);
 }
@@ -1983,11 +2195,91 @@ function getVocabReviewEntries(source) {
 
 function normalizeVocabReviewEntry(entry) {
   const word = normalizeLookupWord(entry?.word || "");
+  const lookupEntry = findWordEntry(word) || {};
+  const phonetic =
+    entry?.phonetic ||
+    entry?.ukphone ||
+    entry?.usphone ||
+    lookupEntry?.phonetic ||
+    lookupEntry?.ukphone ||
+    lookupEntry?.usphone ||
+    VOCAB_PHONETIC_FALLBACKS[word] ||
+    "";
   return {
     word,
     meaning: cleanMainMeaning(entry?.meaning || "") || cleanMeaning(entry?.meaning || ""),
-    phonetic: entry?.phonetic || entry?.ukphone || entry?.usphone || "",
+    phonetic,
   };
+}
+
+function getVocabEntry(source, word) {
+  const key = normalizeLookupWord(word);
+  if (!key) return null;
+  if (source === "core") {
+    return normalizeVocabReviewEntry(state.coreWordIndex.get(key) || state.wordIndex.get(key) || { word: key });
+  }
+  if (!state.wordbook.has(key)) return null;
+  return normalizeVocabReviewEntry(state.coreWordIndex.get(key) || state.wordIndex.get(key) || { word: key });
+}
+
+function selectVocabEntry(source, word) {
+  const key = normalizeLookupWord(word);
+  if (!key) return;
+  if (source === "core") {
+    state.selectedCoreVocabWord = key;
+    if (els["core-vocab-review-start-word"]) els["core-vocab-review-start-word"].value = key;
+    renderVocabDetail("core");
+    return;
+  }
+  state.selectedWordbookWord = key;
+  if (els["wordbook-review-start-word"]) els["wordbook-review-start-word"].value = key;
+  renderVocabDetail("wordbook");
+}
+
+function bindVocabEntryButtons(container) {
+  if (!container) return;
+  container.querySelectorAll("[data-vocab-source][data-word]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectVocabEntry(button.dataset.vocabSource, button.dataset.word);
+    });
+  });
+}
+
+function renderVocabDetail(source) {
+  const detail = source === "core" ? els["core-vocab-detail"] : els["wordbook-detail"];
+  if (!detail) return;
+  const selectedWord = source === "core" ? state.selectedCoreVocabWord : state.selectedWordbookWord;
+  const entry = getVocabEntry(source, selectedWord);
+  if (!entry) {
+    detail.classList.add("hidden");
+    detail.innerHTML = "";
+    return;
+  }
+
+  detail.classList.remove("hidden");
+  detail.innerHTML = `
+    <div>
+      <p class="eyebrow">WORD DETAIL</p>
+      <h3>${escapeHtml(entry.word)}</h3>
+      ${entry.phonetic ? `<p class="vocab-detail-phonetic">${escapeHtml(entry.phonetic)}</p>` : ""}
+      <p class="vocab-detail-meaning">${escapeHtml(entry.meaning || "暂无释义")}</p>
+    </div>
+    <div class="mini-actions">
+      <button class="primary-button mini-button" type="button" data-vocab-detail-review="${escapeHtml(source)}">开始复习</button>
+      <button class="secondary-button mini-button" type="button" data-vocab-detail-close>收起</button>
+    </div>
+  `;
+  detail.querySelector("[data-vocab-detail-review]")?.addEventListener("click", () => {
+    startVocabReview(source, entry.word, { includeAll: true });
+  });
+  detail.querySelector("[data-vocab-detail-close]")?.addEventListener("click", () => {
+    if (source === "core") {
+      state.selectedCoreVocabWord = "";
+    } else {
+      state.selectedWordbookWord = "";
+    }
+    renderVocabDetail(source);
+  });
 }
 
 function renderVocabReview() {
@@ -2024,7 +2316,8 @@ function renderVocabReview() {
   const nextText = record.nextReview ? `下次复习：${new Date(record.nextReview).toLocaleString()}` : "尚未安排复习时间";
   els["vocab-review-card"].innerHTML = `
     <div class="vocab-review-word">${escapeHtml(current.word)}</div>
-    ${current.phonetic ? `<div class="vocab-review-phonetic">${escapeHtml(current.phonetic)}</div>` : ""}
+    <div class="vocab-review-phonetic">${escapeHtml(current.phonetic || "暂无本地音标")}</div>
+    <button class="vocab-review-sound" type="button" data-vocab-action="sound" aria-label="播放发音" title="播放发音">▶ 播放发音</button>
     <div class="vocab-review-meta">${escapeHtml(lastRatingText)} · ${escapeHtml(nextText)}</div>
     <div class="vocab-review-meaning ${state.vocabReviewRevealed ? "" : "hidden"}">
       <strong>中文释义</strong>
@@ -2046,9 +2339,13 @@ function renderVocabReview() {
     state.vocabReviewRevealed = true;
     renderVocabReview();
   });
+  els["vocab-review-card"].querySelector('[data-vocab-action="sound"]')?.addEventListener("click", () => {
+    speakWord(current.word);
+  });
   els["vocab-review-card"].querySelectorAll("[data-vocab-rating]").forEach((button) => {
     button.addEventListener("click", () => rateVocabReview(button.dataset.vocabRating));
   });
+  autoSpeakReviewWord(current.word);
 }
 
 function rateVocabReview(rating) {
@@ -2181,26 +2478,87 @@ function renderWordbook() {
   const targets = [els["wordbook-list"], els["wordbook-page-list"]].filter(Boolean);
   if (!targets.length) return;
   const words = Array.from(state.wordbook).sort();
+  if (els["wordbook-page-edit"]) {
+    els["wordbook-page-edit"].textContent = state.wordbookEditMode ? "完成" : "编辑";
+    els["wordbook-page-edit"].classList.toggle("active", state.wordbookEditMode);
+    els["wordbook-page-edit"].disabled = !words.length;
+  }
   if (!words.length) {
+    state.wordbookEditMode = false;
+    if (els["wordbook-page-edit"]) {
+      els["wordbook-page-edit"].textContent = "编辑";
+      els["wordbook-page-edit"].classList.remove("active");
+      els["wordbook-page-edit"].disabled = true;
+    }
     targets.forEach((target) => {
       target.innerHTML = '<div class="item-meta">勾选核心词后，点击“加入单词库”，这里会显示已保存的词。</div>';
     });
+    state.selectedWordbookWord = "";
+    renderVocabDetail("wordbook");
     return;
   }
   const html = words
     .map((word) => {
       const entry = state.coreWordIndex.get(word) || state.wordIndex.get(word) || { word };
-      return `
-        <div class="wordbook-item">
-          <strong>${escapeHtml(entry.word || word)}</strong>
+      const wordValue = entry.word || word;
+      const itemButton = `
+        <button class="wordbook-item vocab-entry-button" type="button" data-vocab-source="wordbook" data-word="${escapeHtml(wordValue)}">
+          <strong>${escapeHtml(wordValue)}</strong>
           <span>${escapeHtml(cleanMeaning(entry.meaning) || "暂无释义")}</span>
-        </div>
+        </button>
+      `;
+      if (state.wordbookEditMode) {
+        return `
+          <div class="wordbook-edit-row">
+            ${itemButton}
+            <button class="wordbook-delete-button" type="button" data-delete-word="${escapeHtml(wordValue)}" aria-label="删除 ${escapeHtml(wordValue)}">删除</button>
+          </div>
+        `;
+      }
+      return `
+        ${itemButton}
       `;
     })
     .join("");
   targets.forEach((target) => {
     target.innerHTML = html;
+    bindVocabEntryButtons(target);
+    bindWordbookDeleteButtons(target);
   });
+  if (state.selectedWordbookWord && !state.wordbook.has(state.selectedWordbookWord)) {
+    state.selectedWordbookWord = "";
+  }
+  renderVocabDetail("wordbook");
+}
+
+function toggleWordbookEditMode() {
+  state.wordbookEditMode = !state.wordbookEditMode;
+  renderWordbook();
+}
+
+function bindWordbookDeleteButtons(container) {
+  if (!container) return;
+  container.querySelectorAll("[data-delete-word]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeWordbookWord(button.dataset.deleteWord);
+    });
+  });
+}
+
+function removeWordbookWord(word) {
+  const key = normalizeLookupWord(word);
+  if (!key || !state.wordbook.has(key)) return;
+  state.wordbook.delete(key);
+  if (state.selectedWordbookWord === key) {
+    state.selectedWordbookWord = "";
+  }
+  saveWordbook();
+  renderWordbook();
+  renderVocabDueCounts();
+  renderOverview();
+  renderCoreVocabulary(getCurrentQuestion());
+  showToast(`已从单词库删除：${key}`);
 }
 
 function saveWordbook() {

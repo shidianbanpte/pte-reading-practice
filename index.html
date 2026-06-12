@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PTE Reading Practice</title>
-    <link rel="stylesheet" href="css/main.css?v=hero-accuracy-only" />
+    <link rel="stylesheet" href="css/main.css?v=vocab-review-phonetic-20260611" />
   </head>
   <body>
     <header class="app-header">
@@ -13,6 +13,7 @@
         <div>
         <p class="eyebrow">PTE Reading</p>
         <h1>PTE Reading Practice</h1>
+        <p class="update-stamp">更新时间：2026.6.10</p>
         </div>
       </div>
       <div class="header-actions">
@@ -37,7 +38,7 @@
         <div class="hero-copy">
         <p class="eyebrow">FOCUS · PRACTICE · IMPROVE</p>
         <h2>十点半的 <span>PTE</span> 阅读小站</h2>
-        <p>题库、练习记录、核心词汇和错题复盘集中在一个安静的学习工作台。</p>
+        <p>像语法老师一样严谨，像八炸老师一样懂PTE，像GPT老师一样随时在，陪你直到PTE下岸。</p>
         <div class="hero-metrics" aria-label="学习统计">
           <div class="hero-metric">
             <span class="metric-icon purple">⌁</span>
@@ -83,7 +84,6 @@
               <div class="overview-card-icon">▤</div>
               <div>
                 <h4>FIB-RW 下拉</h4>
-                <p><span id="overview-fibrw-count">0</span> 题</p>
               </div>
               <div class="overview-frequency-links" aria-label="FIB-RW 预测频率">
                 <button class="frequency-link-button" id="overview-fibrw-very-high" type="button">
@@ -109,7 +109,6 @@
               <div class="overview-card-icon">▦</div>
               <div>
                 <h4>FIB-R 拖拽</h4>
-                <p><span id="overview-fibr-count">0</span> 题</p>
               </div>
               <div class="overview-frequency-links" aria-label="FIB-R 预测频率">
                 <button class="frequency-link-button" id="overview-fibr-very-high" type="button">
@@ -182,7 +181,14 @@
       <aside class="sidebar">
         <section class="panel">
           <h2>题库</h2>
+          <div id="practice-context" class="practice-context hidden"></div>
           <input id="search-input" class="search-input" type="search" placeholder="搜索题目" />
+          <div class="question-frequency-filter" aria-label="题库频率筛选">
+            <button class="question-frequency-button active" data-question-frequency="" type="button">所有题库</button>
+            <button class="question-frequency-button" data-question-frequency="极高频" type="button">极高频</button>
+            <button class="question-frequency-button" data-question-frequency="高频" type="button">高频</button>
+            <button class="question-frequency-button" data-question-frequency="中频" type="button">中频</button>
+          </div>
           <div class="question-status-filter" aria-label="做题状态筛选">
             <button class="question-status-button active" data-question-status="all" type="button">全部</button>
             <button class="question-status-button" data-question-status="done" type="button">已做</button>
@@ -364,6 +370,7 @@
           <button id="core-vocab-start-review" class="primary-button mini-button" type="button">开始认词复习</button>
           <button id="core-vocab-start-review-all" class="secondary-button mini-button" type="button">复习全部</button>
         </div>
+        <section id="core-vocab-detail" class="vocab-detail-panel hidden"></section>
         <div id="core-vocab-page-list" class="dictionary-grid"></div>
         <div class="pagination standalone-pagination" aria-label="核心词汇分页">
           <button id="core-vocab-prev-page" class="page-button" type="button">上一页</button>
@@ -382,6 +389,7 @@
             <p class="item-meta">独立查看已加入的单词，不进入具体练习题。</p>
           </div>
           <div class="mini-actions">
+            <button id="wordbook-page-edit" class="secondary-button mini-button" type="button">编辑</button>
             <button id="wordbook-page-export" class="secondary-button mini-button" type="button">导出PDF</button>
             <button id="wordbook-page-clear" class="ghost-button danger mini-button" type="button">清空</button>
             <button id="wordbook-back-practice" class="secondary-button mini-button" type="button">返回题库练习</button>
@@ -393,6 +401,7 @@
           <button id="wordbook-start-review" class="primary-button mini-button" type="button">开始认词复习</button>
           <button id="wordbook-start-review-all" class="secondary-button mini-button" type="button">复习全部</button>
         </div>
+        <section id="wordbook-detail" class="vocab-detail-panel hidden"></section>
         <div id="wordbook-page-list" class="wordbook-list standalone-list"></div>
       </section>
     </main>
@@ -423,9 +432,22 @@
     </div>
     <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
 
+    <section id="access-gate" class="access-gate hidden" aria-label="试用期验证">
+      <div class="access-card">
+        <p class="eyebrow">PTE Reading Practice</p>
+        <h2>请输入验证码继续使用</h2>
+        <p id="access-trial-status" class="access-copy">本设备 3 天试用期已结束。请输入验证码继续使用。</p>
+        <div class="access-form">
+          <input id="access-code-input" type="text" autocomplete="one-time-code" placeholder="输入验证码" />
+          <button id="access-code-submit" class="primary-button" type="button">解锁</button>
+        </div>
+        <p id="access-code-message" class="access-message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
     <script src="data/wordlists/local_dictionary.js"></script>
     <script src="data/wordlists/ielts_core_vocab.js"></script>
-    <script src="data/questions.js?v=fibr-translation-pairs-local"></script>
-    <script src="js/app.js?v=local-data-fallback"></script>
+    <script src="data/questions.js?v=current-sources-20260612"></script>
+    <script src="js/app.js?v=vocab-review-phonetic-20260611"></script>
   </body>
 </html>

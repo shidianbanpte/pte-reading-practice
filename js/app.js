@@ -108,13 +108,16 @@ async function init() {
     bindElements();
     bindEvents();
     if (!ensureAccessAllowed()) return;
-    state.records = loadRecords();
+    const savedRecords = loadRecords();
     state.wordbook = loadWordbook();
     state.customCoreWords = loadTeacherWordMap(CUSTOM_CORE_STORAGE_KEY);
     state.vocabReviewRecords = loadVocabReviewRecords();
-    state.submittedQuestionIds = new Set(state.records.map((record) => record.questionId));
     const data = window.PTE_QUESTIONS_DATA || window.QUESTIONS || (await loadQuestionsJson());
     state.questions = data.questions || [];
+    const migration = migrateRecordsToCurrentQuestions(savedRecords);
+    state.records = migration.records;
+    if (migration.changed) saveRecords();
+    state.submittedQuestionIds = new Set(state.records.map((record) => record.questionId));
     state.currentId = state.questions[0]?.id || null;
     renderAll();
   } catch (error) {
@@ -2409,6 +2412,68 @@ function getLabelStats(type = null) {
 
 function getLatestRecord(questionId) {
   return state.records.find((record) => record.questionId === questionId);
+}
+
+function normalizeIdentityPart(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function buildQuestionIdentityKey(type, questionNumber, title) {
+  return [
+    normalizeIdentityPart(type),
+    normalizeIdentityPart(questionNumber),
+    normalizeIdentityPart(title),
+  ].join("::");
+}
+
+function buildQuestionNumberKey(type, questionNumber) {
+  return [normalizeIdentityPart(type), normalizeIdentityPart(questionNumber)].join("::");
+}
+
+function migrateRecordsToCurrentQuestions(records) {
+  const currentIds = new Set(state.questions.map((question) => question.id));
+  const byIdentity = new Map();
+  const byNumber = new Map();
+
+  state.questions.forEach((question) => {
+    byIdentity.set(
+      buildQuestionIdentityKey(question.type, question.question_id, question.title),
+      question
+    );
+    const numberKey = buildQuestionNumberKey(question.type, question.question_id);
+    if (byNumber.has(numberKey)) {
+      byNumber.set(numberKey, null);
+    } else {
+      byNumber.set(numberKey, question);
+    }
+  });
+
+  let changed = false;
+  const migratedRecords = records.map((record) => {
+    if (!record || currentIds.has(record.questionId)) return record;
+
+    const identityMatch = byIdentity.get(
+      buildQuestionIdentityKey(record.type, record.questionNumber, record.title)
+    );
+    const numberMatch = byNumber.get(buildQuestionNumberKey(record.type, record.questionNumber));
+    const matchedQuestion = identityMatch || numberMatch;
+
+    if (!matchedQuestion) return record;
+    changed = true;
+    return {
+      ...record,
+      questionId: matchedQuestion.id,
+      questionNumber: matchedQuestion.question_id,
+      title: matchedQuestion.title,
+      type: matchedQuestion.type,
+      frequency: matchedQuestion.frequency,
+    };
+  });
+
+  return { records: migratedRecords, changed };
 }
 
 function loadRecords() {

@@ -105,6 +105,15 @@ const state = {
 };
 
 const els = {};
+const dragSession = {
+  token: null,
+  value: "",
+  ghost: null,
+  target: null,
+  startX: 0,
+  startY: 0,
+  dragging: false,
+};
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -1088,6 +1097,7 @@ function renderDragDropQuestion(question) {
     drop.dataset.value = "";
     drop.setAttribute("aria-label", `第 ${blankIndex} 空`);
     drop.addEventListener("dragover", handleBlankDragOver);
+    drop.addEventListener("dragleave", handleBlankDragLeave);
     drop.addEventListener("drop", handleBlankDrop);
     drop.addEventListener("click", handleBlankClick);
     select.replaceWith(drop);
@@ -1100,7 +1110,7 @@ function renderDragDropQuestion(question) {
   bank.innerHTML = options
     .map(
       (option, index) => `
-        <button class="drag-token" draggable="true" type="button" data-option="${escapeHtml(option)}" data-token-id="token-${index}">
+        <button class="drag-token" draggable="false" type="button" data-option="${escapeHtml(option)}" data-token-id="token-${index}">
           ${escapeHtml(option)}
         </button>
       `,
@@ -1109,6 +1119,7 @@ function renderDragDropQuestion(question) {
   els["passage"].appendChild(bank);
   bank.querySelectorAll(".drag-token").forEach((token) => {
     token.addEventListener("dragstart", handleTokenDragStart);
+    token.addEventListener("pointerdown", handleTokenPointerDown);
     token.addEventListener("click", handleTokenClick);
   });
 }
@@ -1147,21 +1158,103 @@ function handleTokenDragStart(event) {
     event.preventDefault();
     return;
   }
+  event.dataTransfer.effectAllowed = "move";
   event.dataTransfer.setData("text/plain", event.currentTarget.dataset.option || "");
 }
 
 function handleBlankDragOver(event) {
   event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
   event.currentTarget.classList.add("drag-over");
+}
+
+function handleBlankDragLeave(event) {
+  event.currentTarget.classList.remove("drag-over");
 }
 
 function handleBlankDrop(event) {
   event.preventDefault();
+  event.currentTarget.classList.remove("drag-over");
   const value = event.dataTransfer.getData("text/plain");
-  setDragBlankValue(event.currentTarget, value);
+  if (value) {
+    setDragBlankValue(event.currentTarget, value);
+  }
+}
+
+function handleTokenPointerDown(event) {
+  const token = event.currentTarget;
+  if (token.disabled || event.button !== 0) return;
+  dragSession.token = token;
+  dragSession.value = token.dataset.option || "";
+  dragSession.startX = event.clientX;
+  dragSession.startY = event.clientY;
+  dragSession.dragging = false;
+  dragSession.target = null;
+  document.addEventListener("pointermove", handleTokenPointerMove);
+  document.addEventListener("pointerup", handleTokenPointerUp, { once: true });
+  document.addEventListener("pointercancel", cancelTokenPointerDrag, { once: true });
+}
+
+function handleTokenPointerMove(event) {
+  if (!dragSession.token) return;
+  const distance = Math.hypot(event.clientX - dragSession.startX, event.clientY - dragSession.startY);
+  if (!dragSession.dragging && distance < 6) return;
+  event.preventDefault();
+  if (!dragSession.dragging) {
+    dragSession.dragging = true;
+    dragSession.ghost = createDragGhost(dragSession.token);
+    dragSession.token.classList.add("dragging");
+  }
+  moveDragGhost(event.clientX, event.clientY);
+  els["passage"].querySelectorAll(".drag-blank.drag-over").forEach((blank) => blank.classList.remove("drag-over"));
+  const element = document.elementFromPoint(event.clientX, event.clientY);
+  const target = element?.closest?.(".drag-blank");
+  if (target && els["passage"].contains(target)) {
+    target.classList.add("drag-over");
+    dragSession.target = target;
+  } else {
+    dragSession.target = null;
+  }
+}
+
+function handleTokenPointerUp() {
+  if (dragSession.dragging && dragSession.target && dragSession.value) {
+    setDragBlankValue(dragSession.target, dragSession.value);
+  }
+  cancelTokenPointerDrag();
+}
+
+function createDragGhost(token) {
+  const ghost = token.cloneNode(true);
+  ghost.className = "drag-token drag-token-ghost";
+  ghost.removeAttribute("draggable");
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function moveDragGhost(x, y) {
+  if (!dragSession.ghost) return;
+  dragSession.ghost.style.left = `${x}px`;
+  dragSession.ghost.style.top = `${y}px`;
+}
+
+function cancelTokenPointerDrag() {
+  document.removeEventListener("pointermove", handleTokenPointerMove);
+  document.removeEventListener("pointercancel", cancelTokenPointerDrag);
+  els["passage"]?.querySelectorAll(".drag-blank.drag-over").forEach((blank) => blank.classList.remove("drag-over"));
+  dragSession.token?.classList.remove("dragging");
+  dragSession.ghost?.remove();
+  dragSession.token = null;
+  dragSession.value = "";
+  dragSession.ghost = null;
+  dragSession.target = null;
+  dragSession.dragging = false;
 }
 
 function handleTokenClick(event) {
+  if (dragSession.dragging) return;
   const token = event.currentTarget;
   if (token.disabled) return;
   const active = els["passage"].querySelector(".drag-blank.selected");

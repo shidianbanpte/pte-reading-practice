@@ -1,4 +1,5 @@
 const STORAGE_KEY = "pte_reading_practice_records_v1";
+const FAVORITE_QUESTIONS_STORAGE_KEY = "pte_reading_practice_favorite_questions_v1";
 const VOCAB_STORAGE_KEY = "pte_reading_practice_vocab_bank_v1";
 const CUSTOM_CORE_STORAGE_KEY = "pte_reading_practice_teacher_pte_core_v1";
 const VOCAB_REVIEW_STORAGE_KEY = "pte_reading_practice_vocab_review_v1";
@@ -68,8 +69,10 @@ const state = {
   questionPage: 1,
   typeFilter: "FIB_RW",
   frequencyFilter: null,
+  favoriteFilter: "all",
   questionStatusFilter: "all",
   submittedQuestionIds: new Set(),
+  favoriteQuestionIds: new Set(),
   wordIndex: new Map(),
   coreWordIndex: new Map(),
   wordbook: new Set(),
@@ -94,7 +97,9 @@ const state = {
   practiceContextText: "",
   reviewTypeFilter: "FIB_RW",
   reviewDetailLabel: "",
+  reviewAccuracyFilter: "",
   reviewRelatedStatus: "all",
+  reviewAccuracyPage: 1,
   reviewWrongPage: 1,
   reviewRelatedPage: 1,
 };
@@ -109,6 +114,7 @@ async function init() {
     bindEvents();
     if (!ensureAccessAllowed()) return;
     const savedRecords = loadRecords();
+    state.favoriteQuestionIds = loadFavoriteQuestionIds();
     state.wordbook = loadWordbook();
     state.customCoreWords = loadTeacherWordMap(CUSTOM_CORE_STORAGE_KEY);
     state.vocabReviewRecords = loadVocabReviewRecords();
@@ -247,6 +253,9 @@ function bindElements() {
     "overview-fibr-medium-count",
     "overview-review-errors",
     "overview-clear-records",
+    "overview-favorite-count",
+    "overview-start-favorites",
+    "overview-random-favorites",
     "overview-wordbook-jump",
     "overview-wordbook-review",
     "overview-wordbook-export",
@@ -278,6 +287,7 @@ function bindElements() {
     "review-detail-summary",
     "review-wrong-question-list",
     "review-related-question-list",
+    "review-accuracy-question-list",
     "review-detail-back",
     "review-wrong-prev-page",
     "review-wrong-next-page",
@@ -285,6 +295,13 @@ function bindElements() {
     "review-related-prev-page",
     "review-related-next-page",
     "review-related-page-info",
+    "review-accuracy-prev-page",
+    "review-accuracy-next-page",
+    "review-accuracy-page-info",
+    "review-accuracy-collapse",
+    "review-accuracy-low",
+    "review-accuracy-mid",
+    "review-accuracy-high",
     "review-related-all",
     "review-related-done",
     "review-related-undone",
@@ -320,6 +337,7 @@ function bindElements() {
     "search-input",
     "question-meta",
     "question-title",
+    "favorite-question",
     "score-pill",
     "passage",
     "word-card",
@@ -387,6 +405,7 @@ function bindEvents() {
       showPractice();
       state.typeFilter = button.dataset.typeFilter || "ALL";
       state.frequencyFilter = null;
+      state.favoriteFilter = "all";
       state.questionPage = 1;
       const firstQuestion = getFilteredQuestions()[0];
       if (firstQuestion) {
@@ -422,6 +441,7 @@ function bindEvents() {
   on("prev-question", "click", () => navigateQuestion(-1));
   on("next-question", "click", () => navigateQuestion(1));
   on("submit-answer", "click", submitCurrentQuestion);
+  on("favorite-question", "click", toggleCurrentQuestionFavorite);
   on("retry-question", "click", () => renderQuestion(getCurrentQuestion()));
   on("vocab-select-all", "click", () => setCoreVocabSelection(true));
   on("vocab-clear-selection", "click", () => setCoreVocabSelection(false));
@@ -446,6 +466,7 @@ function bindEvents() {
   on("open-wordbook", "click", showWordbookPage);
   on("overview-browse-bank", "click", () => {
     clearPracticeLabelFilter();
+    state.favoriteFilter = "all";
     showPractice();
     renderAll();
   });
@@ -464,6 +485,8 @@ function bindEvents() {
   on("overview-fibr-medium", "click", () => startQuestionSet("FIB_R", "中频"));
   on("overview-review-errors", "click", showReviewPage);
   on("overview-clear-records", "click", resetRecords);
+  on("overview-start-favorites", "click", startFavoriteQuestions);
+  on("overview-random-favorites", "click", startRandomFavoriteQuestion);
   on("overview-wordbook-jump", "click", showWordbookPage);
   on("overview-wordbook-review", "click", () => startVocabReview("wordbook"));
   on("overview-wordbook-export", "click", exportWordbook);
@@ -479,6 +502,21 @@ function bindEvents() {
   on("review-open-fibr", "click", () => showReviewTypePage("FIB_R"));
   on("review-type-back", "click", showReviewPage);
   on("review-detail-back", "click", () => showReviewTypePage(state.reviewTypeFilter));
+  ["review-accuracy-collapse", "review-accuracy-low", "review-accuracy-mid", "review-accuracy-high"].forEach((id) => {
+    on(id, "click", () => {
+      state.reviewAccuracyFilter = els[id].dataset.reviewAccuracy || "";
+      state.reviewAccuracyPage = 1;
+      renderReviewTypePage();
+    });
+  });
+  on("review-accuracy-prev-page", "click", () => {
+    state.reviewAccuracyPage = Math.max(1, state.reviewAccuracyPage - 1);
+    renderReviewTypePage();
+  });
+  on("review-accuracy-next-page", "click", () => {
+    state.reviewAccuracyPage += 1;
+    renderReviewTypePage();
+  });
   ["review-related-all", "review-related-done", "review-related-undone"].forEach((id) => {
     on(id, "click", () => {
       state.reviewRelatedStatus = els[id].dataset.reviewStatus || "all";
@@ -589,10 +627,11 @@ function renderQuestionList() {
     .map((question) => {
       const latest = getLatestRecord(question.id);
       const scoreText = latest ? `最近 ${latest.correct}/${latest.total}` : "未练习";
+      const favoriteText = state.favoriteQuestionIds.has(question.id) ? " · 已收藏" : "";
       return `
         <button class="question-item ${question.id === state.currentId ? "active" : ""}" data-id="${question.id}" type="button">
           <div class="item-title">${escapeHtml(question.question_id)}. ${escapeHtml(question.title)}</div>
-          <div class="item-meta">${escapeHtml(question.frequency)} · ${escapeHtml(question.type)} · ${question.blanks.length} 空 · ${scoreText}</div>
+          <div class="item-meta">${escapeHtml(question.frequency)} · ${escapeHtml(question.type)} · ${question.blanks.length} 空 · ${scoreText}${favoriteText}</div>
         </button>
       `;
     })
@@ -633,6 +672,7 @@ function getFilteredQuestions() {
     const matchesPracticeSet = !practiceIdOrder.size || practiceIdOrder.has(question.id);
     const matchesType = question.type === state.typeFilter;
     const matchesFrequency = !state.frequencyFilter || question.frequency === state.frequencyFilter;
+    const matchesFavorite = state.favoriteFilter !== "favorite" || state.favoriteQuestionIds.has(question.id);
     const matchesPracticeLabel =
       !state.practiceLabelFilter ||
       ((state.practiceLabelType ? question.type === state.practiceLabelType : true) &&
@@ -644,7 +684,7 @@ function getFilteredQuestions() {
         : state.questionStatusFilter === "undone"
           ? !isDone
           : true;
-    return matchesKeyword && matchesPracticeSet && matchesType && matchesFrequency && matchesPracticeLabel && matchesStatus;
+    return matchesKeyword && matchesPracticeSet && matchesType && matchesFrequency && matchesFavorite && matchesPracticeLabel && matchesStatus;
   });
   if (practiceIdOrder.size) {
     return questions.sort((a, b) => (practiceIdOrder.get(a.id) ?? 0) - (practiceIdOrder.get(b.id) ?? 0));
@@ -732,6 +772,8 @@ function showReviewPage() {
 
 function showReviewTypePage(type) {
   state.reviewTypeFilter = type || "FIB_RW";
+  state.reviewAccuracyFilter = "";
+  state.reviewAccuracyPage = 1;
   renderReviewTypePage();
   showOnlyPage("review-type-page");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -773,6 +815,7 @@ function startQuestionType(type) {
   clearPracticeLabelFilter();
   state.typeFilter = type;
   state.frequencyFilter = null;
+  state.favoriteFilter = "all";
   state.questionPage = 1;
   ensureCurrentQuestionInFilter();
   showPractice();
@@ -783,6 +826,7 @@ function startQuestionSet(type, frequency) {
   clearPracticeLabelFilter();
   state.typeFilter = type;
   state.frequencyFilter = frequency;
+  state.favoriteFilter = "all";
   state.questionPage = 1;
   ensureCurrentQuestionInFilter();
   showPractice();
@@ -793,6 +837,7 @@ function startRandomQuestion(type = state.typeFilter, frequency = null) {
   clearPracticeLabelFilter();
   state.typeFilter = type;
   state.frequencyFilter = frequency;
+  state.favoriteFilter = "all";
   const questions = state.questions.filter((question) => {
     return question.type === state.typeFilter && (!state.frequencyFilter || question.frequency === state.frequencyFilter);
   });
@@ -801,6 +846,47 @@ function startRandomQuestion(type = state.typeFilter, frequency = null) {
     state.currentId = question.id;
     moveQuestionIntoCurrentPage(question.id);
   }
+  showPractice();
+  renderAll();
+}
+
+function getFavoriteQuestions() {
+  return state.questions.filter((question) => state.favoriteQuestionIds.has(question.id));
+}
+
+function startFavoriteQuestions() {
+  clearPracticeLabelFilter();
+  const favorites = getFavoriteQuestions();
+  if (!favorites.length) {
+    showToast("还没有收藏题目");
+    return;
+  }
+  if (!favorites.some((question) => question.type === state.typeFilter)) {
+    state.typeFilter = favorites[0].type;
+  }
+  state.frequencyFilter = null;
+  state.favoriteFilter = "favorite";
+  state.questionStatusFilter = "all";
+  state.questionPage = 1;
+  ensureCurrentQuestionInFilter();
+  showPractice();
+  renderAll();
+}
+
+function startRandomFavoriteQuestion() {
+  clearPracticeLabelFilter();
+  const favorites = getFavoriteQuestions();
+  if (!favorites.length) {
+    showToast("还没有收藏题目");
+    return;
+  }
+  const question = favorites[Math.floor(Math.random() * favorites.length)];
+  state.typeFilter = question.type;
+  state.frequencyFilter = null;
+  state.favoriteFilter = "favorite";
+  state.questionStatusFilter = "all";
+  state.currentId = question.id;
+  moveQuestionIntoCurrentPage(question.id);
   showPractice();
   renderAll();
 }
@@ -822,6 +908,7 @@ function renderOverview() {
   setText("overview-fibr-high-count", countQuestions("FIB_R", "高频"));
   setText("overview-fibr-medium-count", countQuestions("FIB_R", "中频"));
   setText("overview-record-count", state.records.length);
+  setText("overview-favorite-count", state.favoriteQuestionIds.size);
   setText("overview-wordbook-count", state.wordbook.size);
   setText("overview-core-count", state.coreWordIndex.size);
   setText("overview-fibrw-accuracy-count", getAverageAccuracy("FIB_RW"));
@@ -906,11 +993,14 @@ function updateQuestionNavButtons() {
 function renderQuestion(question) {
   if (!question) {
     els["question-title"].textContent = "暂无题目";
+    els["favorite-question"]?.classList.add("hidden");
     return;
   }
 
+  els["favorite-question"]?.classList.remove("hidden");
   els["question-meta"].textContent = `${question.frequency} · ${question.type} · ${question.blanks.length} 空`;
   els["question-title"].textContent = `${question.question_id}. ${question.title}`;
+  updateFavoriteQuestionButton(question);
   els["passage"].innerHTML = question.passage_html;
   if (question.type === "FIB_R") {
     renderDragDropQuestion(question);
@@ -931,6 +1021,35 @@ function renderQuestion(question) {
   els["score-pill"].textContent = "未提交";
   updateQuestionNavButtons();
   hideWordCard();
+}
+
+function updateFavoriteQuestionButton(question = getCurrentQuestion()) {
+  const button = els["favorite-question"];
+  if (!button || !question) return;
+  const isFavorite = state.favoriteQuestionIds.has(question.id);
+  button.classList.toggle("active", isFavorite);
+  button.setAttribute("aria-pressed", String(isFavorite));
+  button.textContent = isFavorite ? "已收藏" : "收藏";
+}
+
+function toggleCurrentQuestionFavorite() {
+  const question = getCurrentQuestion();
+  if (!question) return;
+  if (state.favoriteQuestionIds.has(question.id)) {
+    state.favoriteQuestionIds.delete(question.id);
+    showToast("已取消收藏");
+  } else {
+    state.favoriteQuestionIds.add(question.id);
+    showToast("已收藏本题");
+  }
+  saveFavoriteQuestionIds();
+  updateFavoriteQuestionButton(question);
+  if (state.favoriteFilter === "favorite") {
+    ensureCurrentQuestionInFilter();
+    renderAll();
+  } else {
+    renderQuestionList();
+  }
 }
 
 function renderAnalysisHtml(question) {
@@ -1863,8 +1982,10 @@ function getReviewTypeSummary(type) {
 function renderReviewTypePage() {
   const type = state.reviewTypeFilter || "FIB_RW";
   const typeName = type === "FIB_R" ? "FIB-R 拖拽" : "FIB-RW 下拉";
-  setText("review-type-title", `${typeName} 错题复盘`);
-  setText("review-type-summary", "集中查看该题型当前错得最多的考点。");
+  setText("review-type-title", `${typeName} · 做题复盘`);
+  setText("review-type-summary", "按题型查看正确率分档，同时保留薄弱考点统计，针对性提升。");
+  updateReviewAccuracyTabs();
+  renderReviewAccuracyQuestionList(type);
   const stats = getLabelStats(type);
   const rows = Object.entries(stats)
     .sort((a, b) => b[1].wrong - a[1].wrong || a[0].localeCompare(b[0], "zh-CN"))
@@ -1878,15 +1999,117 @@ function renderReviewTypePage() {
   setReviewWeaknessHtml(rows
     .map(([label, item]) => {
       const rate = Math.round((item.correct / item.attempts) * 100);
+      const iconClass = getWeaknessIconClass(label);
       return `
-        <button class="weakness-item" data-label="${escapeHtml(label)}" type="button">
-          <div class="item-title">${escapeHtml(label)}</div>
-          <div class="item-meta">错 ${item.wrong} 次 · 对 ${item.correct} 次 · 正确率 ${rate}%</div>
+        <button class="weakness-item review-weakness-row" data-label="${escapeHtml(label)}" type="button">
+          <span class="weakness-icon ${iconClass}" aria-hidden="true"></span>
+          <span class="weakness-name">${escapeHtml(label)}</span>
+          <span class="weakness-count">错 ${item.wrong} 次</span>
+          <span class="weakness-count">对 ${item.correct} 次</span>
+          <span class="weakness-rate-label">正确率 ${rate}%</span>
+          <span class="weakness-progress" aria-hidden="true"><span style="width: ${rate}%"></span></span>
+          <span class="weakness-rate">${rate}%</span>
+          <span class="weakness-arrow" aria-hidden="true">›</span>
         </button>
       `;
     })
     .join(""));
   bindReviewWeaknessItems();
+}
+
+function getWeaknessIconClass(label) {
+  const labels = ["固定搭配", "单句理解", "非谓语形式", "时态语态", "上下文语境", "逻辑衔接", "状语从句", "定语从句"];
+  const index = labels.indexOf(label);
+  return `weakness-icon-${index >= 0 ? index + 1 : "default"}`;
+}
+
+function renderReviewAccuracyQuestionList(type) {
+  if (!state.reviewAccuracyFilter) {
+    setReviewAccuracyPlaceholder("请选择一个正确率档位，再查看对应题目。");
+    return;
+  }
+  const rows = getReviewAccuracyQuestionRows(type);
+  setReviewAccuracyPagerVisible(true);
+  renderReviewQuestionList(
+    "review-accuracy-question-list",
+    rows,
+    "当前正确率分档下没有题目记录。",
+    {
+      pageKey: "reviewAccuracyPage",
+      prevId: "review-accuracy-prev-page",
+      nextId: "review-accuracy-next-page",
+      infoId: "review-accuracy-page-info",
+    },
+  );
+}
+
+function setReviewAccuracyPlaceholder(text) {
+  if (els["review-accuracy-question-list"]) {
+    els["review-accuracy-question-list"].innerHTML = `<div class="item-meta">${escapeHtml(text)}</div>`;
+  }
+  setReviewAccuracyPagerVisible(false);
+}
+
+function setReviewAccuracyPagerVisible(visible) {
+  ["review-accuracy-prev-page", "review-accuracy-next-page", "review-accuracy-page-info"].forEach((id) => {
+    if (els[id]) {
+      els[id].style.display = visible ? "" : "none";
+    }
+  });
+}
+
+function getReviewAccuracyQuestionRows(type) {
+  const latestByQuestion = new Map();
+  state.records.forEach((record) => {
+    if (record.type !== type) return;
+    const existing = latestByQuestion.get(record.questionId);
+    if (!existing || record.createdAt > existing.createdAt) {
+      latestByQuestion.set(record.questionId, record);
+    }
+  });
+
+  return Array.from(latestByQuestion.values())
+    .map((record) => {
+      const question = state.questions.find((item) => item.id === record.questionId);
+      if (!question) return null;
+      const rate = record.total ? Math.round((record.correct / record.total) * 100) : 0;
+      return {
+        id: question.id,
+        question_id: question.question_id,
+        title: question.title,
+        frequency: question.frequency,
+        type: question.type,
+        rate,
+        meta: `最近 ${record.correct}/${record.total} · 正确率 ${rate}%`,
+      };
+    })
+    .filter(Boolean)
+    .filter((item) => matchesReviewAccuracyBucket(item.rate))
+    .sort((a, b) => a.rate - b.rate || Number(a.question_id) - Number(b.question_id));
+}
+
+function matchesReviewAccuracyBucket(rate) {
+  if (state.reviewAccuracyFilter === "low") return rate < 40;
+  if (state.reviewAccuracyFilter === "mid") return rate >= 40 && rate < 80;
+  if (state.reviewAccuracyFilter === "high") return rate >= 80 && rate < 100;
+  return true;
+}
+
+function getReviewAccuracyLabel(filter = state.reviewAccuracyFilter) {
+  if (filter === "low") return "正确率40%以下";
+  if (filter === "mid") return "正确率40%-80%";
+  if (filter === "high") return "正确率80%以上";
+  return "全部正确率";
+}
+
+function updateReviewAccuracyTabs() {
+  ["review-accuracy-collapse", "review-accuracy-low", "review-accuracy-mid", "review-accuracy-high"].forEach((id) => {
+    const filter = els[id]?.dataset.reviewAccuracy || "";
+    els[id]?.classList.toggle("active", Boolean(state.reviewAccuracyFilter) && filter === state.reviewAccuracyFilter);
+  });
+  if (els["review-accuracy-collapse"]) {
+    els["review-accuracy-collapse"].style.display = state.reviewAccuracyFilter ? "" : "none";
+  }
 }
 
 function setReviewWeaknessHtml(html) {
@@ -2033,20 +2256,24 @@ function updateReviewListPager(pager, page, totalPages, totalRows) {
 function openQuestionFromReview(questionId, questionIds = [], sourceListId = "") {
   const question = state.questions.find((item) => item.id === questionId);
   if (!question) return;
+  const isRelatedList = sourceListId === "review-related-question-list";
+  const isAccuracyList = sourceListId === "review-accuracy-question-list";
   state.typeFilter = question.type;
   state.frequencyFilter = null;
-  state.questionStatusFilter = sourceListId === "review-related-question-list" ? state.reviewRelatedStatus : "all";
-  state.practiceLabelFilter = state.reviewDetailLabel || "";
-  state.practiceLabelType = state.reviewTypeFilter || question.type;
+  state.questionStatusFilter = isRelatedList ? state.reviewRelatedStatus : "all";
+  state.practiceLabelFilter = isAccuracyList ? "" : state.reviewDetailLabel || "";
+  state.practiceLabelType = isAccuracyList ? "" : state.reviewTypeFilter || question.type;
   state.practiceQuestionIds = Array.from(new Set(questionIds.filter(Boolean)));
   if (els["search-input"]) {
     els["search-input"].value = "";
   }
-  const statusText =
-    sourceListId === "review-related-question-list"
-      ? getReviewRelatedStatusText(state.reviewRelatedStatus)
-      : "错题";
-  state.practiceContextText = `${state.practiceLabelFilter} · ${statusText} · ${state.practiceQuestionIds.length || 1} 题`;
+  if (isAccuracyList) {
+    const typeName = question.type === "FIB_R" ? "FIB-R 拖拽" : "FIB-RW 下拉";
+    state.practiceContextText = `${typeName} · ${getReviewAccuracyLabel()} · ${state.practiceQuestionIds.length || 1} 题`;
+  } else {
+    const statusText = isRelatedList ? getReviewRelatedStatusText(state.reviewRelatedStatus) : "错题";
+    state.practiceContextText = `${state.practiceLabelFilter} · ${statusText} · ${state.practiceQuestionIds.length || 1} 题`;
+  }
   state.currentId = question.id;
   moveQuestionIntoCurrentPage(question.id);
   showPractice();
@@ -2489,6 +2716,26 @@ function saveRecords() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records.slice(0, 500)));
   } catch (error) {
     console.warn("练习结果已在当前页面显示，但浏览器阻止了本地保存。", error);
+  }
+}
+
+function loadFavoriteQuestionIds() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAVORITE_QUESTIONS_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function saveFavoriteQuestionIds() {
+  try {
+    localStorage.setItem(
+      FAVORITE_QUESTIONS_STORAGE_KEY,
+      JSON.stringify(Array.from(state.favoriteQuestionIds))
+    );
+  } catch (error) {
+    console.warn("收藏状态已在当前页面显示，但浏览器阻止了本地保存。", error);
   }
 }
 

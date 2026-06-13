@@ -71,7 +71,8 @@
       "FIB_RW 867. Video Game: 题型+题号+标题重复，保留 june-supplement，移除 may-medium",
       "FIB_R 875. Trinity Sport and Fitness: 题型+题号+标题重复，保留 june-supplement，移除 may-medium",
       "FIB_R 1158. Museum Restaurant: 题型+题号+标题重复，保留 june-supplement，移除 may-high"
-    ]
+    ],
+    "last_single_question_update": "FIB_RW 1336 Sleepwalking updated from source docx on 2026-06-13"
   },
   "questions": [
     {
@@ -6873,8 +6874,8 @@
       "type": "FIB_RW",
       "frequency": "极高频",
       "passage_html": "<p>Sleepwalking is a disorder that occurs during sleep, in which a person may get up and walk around. It usually happens at<select class=\"blank-select\" data-blank-index=\"1\"><option value=\"\">选择答案</option><option value=\"other\">other</option><option value=\"certain\">certain</option><option value=\"some\">some</option><option value=\"few\">few</option></select>times of the night, especially during the deeper stages of sleep. People who sleepwalk are not aware of their actions and often do not remember<select class=\"blank-select\" data-blank-index=\"2\"><option value=\"\">选择答案</option><option value=\"where\">where</option><option value=\"when\">when</option><option value=\"what\">what</option><option value=\"how\">how</option></select>they have done when they wake up. Sleepwalking is more common in children than in adults, and many children grow out of it over time. Sleepwalking is not the only type of unusual sleep behavior.<select class=\"blank-select\" data-blank-index=\"3\"><option value=\"\">选择答案</option><option value=\"The other\">The other</option><option value=\"Another\">Another</option><option value=\"Other\">Other</option><option value=\"Others\">Others</option></select>include sleep talking, nightmares, and night terrors.</p>",
-      "analysis_html": "<p>1、 certain</p>\n<p>考点：固定搭配</p>\n<p>解析：这个答案考查的是固定搭配。at certain times 构成固定搭配,意为“在某些特定的时间”。在单句语境中,后文紧接着提到“尤其是在深度睡眠阶段(especially during the deeper stages of sleep)”,这进一步印证了梦游并不是随机在任何时间发生,而是在“特定”的睡眠阶段发生,在单句内部即可直接锁定 certain。</p>\n<p>2、 what</p>\n<p>考点：单句理解</p>\n<p>解析：在单句语境中,空格处需要填入一个连接代词来引导 remember 后面的宾语从句。从句中的动词短语 have done(做)缺少宾语,因此必须使用在从句中充当宾语的连接代词 what,表示“他们醒来时往往不记得他们‘所做的事情’”。而 where(在哪里)、when(在何时)、how(如何)都是副词,不能在从句中作宾语。</p>\n<p>3、 Another</p>\n<p>考点：上下文语境</p>\n<p>解析：在单句语境中,前一句话提到“梦游并不是唯一一种异常的睡眠行为(Sleepwalking is not the only type...)”,本句接着列举了其他同类行为。Another 在此处用作代词,意为“另一个、另外一些(同类事物中的其他案例)”,用来引出后面并列的梦话、噩梦和夜惊等其他异常睡眠行为,且位于句首需要大写。</p>",
-      "translation_html": "<p>Sleepwalking is a disorder that occurs during sleep, in which a person may get up and walk around.</p>\n<p>梦游是一种发生在睡眠过程中的障碍，患者在睡眠中可能会起身走动。</p>\n<p>It usually happens at certain times of the night, especially during the deeper stages of sleep.</p>\n<p>它通常发生在夜间的某些特定时刻，尤其是在深度睡眠阶段。</p>\n<p>People who sleepwalk are not aware of their actions and often do not remember what they have done when they wake up.</p>\n<p>梦游者对自己的行为没有意识，并且在醒来后往往不记得自己做了什么。</p>\n<p>Sleepwalking is more common in children than in adults, and many children grow out of it over time.</p>\n<p>梦游在儿童中比在成人中更为常见，并且许多儿童会随着年龄增长而自然痊愈。</p>\n<p>Sleepwalking is not the only type of unusual sleep behavior.</p>\n<p>梦游并不是唯一一种异常的睡眠行为。</p>\n<p>Another include sleep talking, nightmares, and night terrors.</p>\n<p>其他还包括梦话、噩梦和夜惊。</p>",
+      "analysis_html": "<p>1、 certain</p>\n<p>考点：固定搭配</p>\n<p>解析：这个答案考查的是固定搭配。at certain times 构成固定搭配,意为“在某些特定的时间”。在单句语境中,后文紧接着提到“尤其是在深度睡眠阶段(especially during the deeper stages of sleep)”,这进一步印证了梦游并不是随机在任何时间发生,而是在“特定”的睡眠阶段发生,在单句内部即可直接锁定 certain。</p>\n<p>2、 what</p>\n<p>考点：单句理解</p>\n<p>解析：在单句语境中,空格处需要填入一个连接代词来引导 remember 后面的宾语从句。从句中的动词短语 have done(做)缺少宾语,因此必须使用在从句中充当宾语的连接代词 what,表示“他们醒来时往往不记得他们‘所做的事情’”。而 where(在哪里)、when(在何时)、how(如何)都是副词,不能在从句中作宾语。</p>\n<p>3、 Others</p>\n<p>考点：单句理解</p>\n<p>解析： 首先，观察空格后的谓语动词 include（包括）使用的是原形，这直接证明该句的主语必须是一个复数概念。</p>\n<p>其次，结合前文的语义流：前句提到 “Sleepwalking is not the only type of unusual sleep behavior（梦游症并不是唯一的一种异常睡眠行为）”；本句顺承该语境，需要表达“【其他的一些异常睡眠行为】还包括说梦话、梦魇和夜惊”。</p>\n<p>在单句内部的代词辨析与数格一致要求下：</p>\n<p>Another（另一个）后接单数谓语动词（如果是 Another，谓语应为 includes），故排除；</p>\n<p>Other 是形容词，不能单独作主语，故排除；</p>\n<p>Others 是代词，代表 Other unusual sleep behaviors（其他异常睡眠行为），既属于复数概念完美匹配复数谓语动词 include，又符合泛指“其他”的代词语义。</p>",
+      "translation_html": "<p>Sleepwalking is a disorder that occurs during sleep, in which a person may get up and walk around.</p>\n<p>梦游是一种发生在睡眠过程中的障碍，患者在睡眠中可能会起身走动。</p>\n<p>It usually happens at certain times of the night, especially during the deeper stages of sleep.</p>\n<p>它通常发生在夜间的某些特定时刻，尤其是在深度睡眠阶段。</p>\n<p>People who sleepwalk are not aware of their actions and often do not remember what they have done when they wake up.</p>\n<p>梦游者对自己的行为没有意识，并且在醒来后往往不记得自己做了什么。</p>\n<p>Sleepwalking is more common in children than in adults, and many children grow out of it over time.</p>\n<p>梦游在儿童中比在成人中更为常见，并且许多儿童会随着年龄增长而自然痊愈。</p>\n<p>Sleepwalking is not the only type of unusual sleep behavior.</p>\n<p>梦游并不是唯一一种异常的睡眠行为。</p>\n<p>Others include sleep talking, nightmares, and night terrors.</p>\n<p>其他还包括梦话、噩梦和夜惊。</p>",
       "blanks": [
         {
           "blank_index": 1,
@@ -6902,15 +6903,15 @@
         },
         {
           "blank_index": 3,
-          "label": "上下文语境",
-          "answer": "Another",
+          "label": "单句理解",
+          "answer": "Others",
           "options": [
             "The other",
             "Another",
             "Other",
             "Others"
           ],
-          "explanation": "在单句语境中,前一句话提到“梦游并不是唯一一种异常的睡眠行为(Sleepwalking is not the only type...)”,本句接着列举了其他同类行为。Another 在此处用作代词,意为“另一个、另外一些(同类事物中的其他案例)”,用来引出后面并列的梦话、噩梦和夜惊等其他异常睡眠行为,且位于句首需要大写。"
+          "explanation": "首先，观察空格后的谓语动词 include（包括）使用的是原形，这直接证明该句的主语必须是一个复数概念。\n其次，结合前文的语义流：前句提到 “Sleepwalking is not the only type of unusual sleep behavior（梦游症并不是唯一的一种异常睡眠行为）”；本句顺承该语境，需要表达“【其他的一些异常睡眠行为】还包括说梦话、梦魇和夜惊”。\n在单句内部的代词辨析与数格一致要求下：\nAnother（另一个）后接单数谓语动词（如果是 Another，谓语应为 includes），故排除；\nOther 是形容词，不能单独作主语，故排除；\nOthers 是代词，代表 Other unusual sleep behaviors（其他异常睡眠行为），既属于复数概念完美匹配复数谓语动词 include，又符合泛指“其他”的代词语义。"
         }
       ]
     },

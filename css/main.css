@@ -231,6 +231,177 @@ select {
   font-weight: 700;
 }
 
+.review-type-panel {
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 12%, rgba(119, 100, 255, 0.16), transparent 26%),
+    linear-gradient(180deg, #fbfcff 0%, #ffffff 34%, #fbfcff 100%);
+}
+
+.review-type-panel > .panel {
+  margin: 0 32px 18px;
+}
+
+.review-type-panel > .panel:last-child {
+  margin-bottom: 32px;
+}
+
+.review-type-hero {
+  min-height: 160px;
+  margin: 0;
+  padding: 34px 38px 28px;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.94), rgba(247, 249, 255, 0.82)),
+    radial-gradient(circle at 78% 48%, rgba(104, 86, 255, 0.2), transparent 22%);
+}
+
+.review-type-hero .eyebrow {
+  color: #5a4bff;
+  font-weight: 800;
+}
+
+.review-type-hero h2 {
+  font-size: 34px;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.review-accuracy-panel,
+.review-weakness-panel {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 44px rgba(56, 73, 117, 0.08);
+}
+
+.review-accuracy-panel .section-head.compact,
+.review-weakness-panel .section-head.compact {
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.review-accuracy-panel h2,
+.review-weakness-panel h2 {
+  position: relative;
+  padding-left: 40px;
+}
+
+.review-accuracy-panel h2::before,
+.review-weakness-panel h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #f2efff, #ffffff);
+  box-shadow: inset 0 0 0 1px #ece8ff;
+}
+
+.review-weakness-panel h2::before {
+  background: linear-gradient(135deg, #f5f1ff, #ffffff);
+}
+
+.review-accuracy-panel .review-filter-tabs {
+  gap: 12px;
+}
+
+.review-accuracy-panel .mini-button {
+  min-width: 108px;
+  height: 42px;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.review-accuracy-panel .mini-button.active {
+  border-color: #725cff;
+  background: #ffffff;
+  color: #5b45f0;
+  box-shadow: 0 8px 18px rgba(91, 69, 240, 0.12);
+}
+
+.review-accuracy-panel .item-meta {
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.review-weakness-panel .weakness-list {
+  gap: 10px;
+}
+
+.review-weakness-row {
+  display: grid;
+  grid-template-columns: 34px minmax(120px, 1.4fr) 86px 86px 98px minmax(140px, 0.8fr) 54px 18px;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(20, 32, 52, 0.03);
+}
+
+.review-weakness-row:hover {
+  border-color: #cfd9ee;
+  background: #fbfdff;
+}
+
+.weakness-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f0edff;
+}
+
+.weakness-icon-1 { background: linear-gradient(135deg, #eeeaff, #ffffff); }
+.weakness-icon-2 { background: linear-gradient(135deg, #dcf8ef, #ffffff); }
+.weakness-icon-3 { background: linear-gradient(135deg, #fff2cf, #ffffff); }
+.weakness-icon-4 { background: linear-gradient(135deg, #e2f1ff, #ffffff); }
+.weakness-icon-5 { background: linear-gradient(135deg, #ffe3e8, #ffffff); }
+.weakness-icon-6 { background: linear-gradient(135deg, #eee8ff, #ffffff); }
+.weakness-icon-7 { background: linear-gradient(135deg, #ffe9dd, #ffffff); }
+.weakness-icon-8 { background: linear-gradient(135deg, #dff8ee, #ffffff); }
+.weakness-icon-default { background: linear-gradient(135deg, #eef2f7, #ffffff); }
+
+.weakness-name {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.weakness-count,
+.weakness-rate-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.weakness-progress {
+  height: 7px;
+  border-radius: 999px;
+  background: #edeefe;
+  overflow: hidden;
+}
+
+.weakness-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6f5cff, #30c7b5);
+}
+
+.weakness-rate {
+  color: #5b45f0;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.weakness-arrow {
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+}
+
 .standalone-search {
   height: 48px;
   margin: 8px 0 18px;
@@ -362,7 +533,7 @@ select {
 
 .overview-card-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 18px;
 }
 
@@ -528,6 +699,30 @@ select {
   padding: 18px 20px;
 }
 
+.question-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.favorite-question-button {
+  min-width: 76px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #ffffff;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.favorite-question-button.active {
+  border-color: #f2d8a6;
+  background: #fff7df;
+  color: #8b3d12;
+  font-weight: 700;
+}
+
 .score-pill {
   min-width: 96px;
   border-radius: 999px;
@@ -573,7 +768,11 @@ select {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin: 10px 0 12px;
+  margin: 8px 0 12px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
 }
 
 .question-frequency-filter {
@@ -581,6 +780,10 @@ select {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin: 10px 0 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
 }
 
 .question-status-button,
@@ -1790,7 +1993,7 @@ body {
 }
 
 .overview-card-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 18px;
 }
 
@@ -1933,6 +2136,10 @@ body {
   background: linear-gradient(135deg, #ffb24a, #fb754d);
 }
 
+.overview-card-favorites .overview-card-icon {
+  background: linear-gradient(135deg, #ffd166, #f59e0b);
+}
+
 .overview-card-wordbook .overview-card-icon {
   background: linear-gradient(135deg, #22b68b, #58d3be);
 }
@@ -1944,6 +2151,10 @@ body {
 
 .overview-card-review {
   color: #ff9d4d;
+}
+
+.overview-card-favorites {
+  color: #d18a00;
 }
 
 .overview-card-wordbook {
@@ -2030,6 +2241,57 @@ body {
     position: static;
     max-height: none;
     overflow: visible;
+  }
+
+  .review-type-panel > .panel {
+    margin: 0 16px 16px;
+  }
+
+  .review-type-panel > .panel:last-child {
+    margin-bottom: 16px;
+  }
+
+  .review-type-hero {
+    min-height: auto;
+    padding: 26px 20px 22px;
+  }
+
+  .review-type-hero h2 {
+    font-size: 28px;
+  }
+
+  .review-accuracy-panel .section-head.compact {
+    align-items: flex-start;
+  }
+
+  .review-accuracy-panel .review-filter-tabs {
+    width: 100%;
+  }
+
+  .review-accuracy-panel .mini-button {
+    flex: 1 1 110px;
+  }
+
+  .review-weakness-row {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    padding: 12px;
+  }
+
+  .weakness-name {
+    grid-column: 2;
+  }
+
+  .weakness-count,
+  .weakness-rate-label,
+  .weakness-progress,
+  .weakness-rate {
+    grid-column: 2 / -1;
+  }
+
+  .weakness-arrow {
+    grid-column: 3;
+    grid-row: 1;
   }
 
 }

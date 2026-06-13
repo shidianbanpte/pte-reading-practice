@@ -1455,10 +1455,25 @@ select {
   cursor: grab;
   font-size: 16px;
   line-height: 1.25;
+  touch-action: none;
+  user-select: none;
 }
 
 .drag-token:active {
   cursor: grabbing;
+}
+
+.drag-token.dragging {
+  opacity: 0.45;
+}
+
+.drag-token-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 14px 30px rgba(31, 46, 85, 0.18);
+  opacity: 0.94;
 }
 
 .drag-token.selected {

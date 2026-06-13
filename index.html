@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PTE Reading Practice</title>
-    <link rel="stylesheet" href="css/main.css?v=vocab-review-phonetic-20260611" />
+    <link rel="stylesheet" href="css/main.css?v=review-dashboard-polish-20260613" />
   </head>
   <body>
     <header class="app-header">
@@ -13,7 +13,7 @@
         <div>
         <p class="eyebrow">PTE Reading</p>
         <h1>PTE Reading Practice</h1>
-        <p class="update-stamp">更新时间：2026.6.12</p>
+        <p class="update-stamp">更新时间：2026.6.13</p>
         </div>
       </div>
       <div class="header-actions">
@@ -38,7 +38,7 @@
         <div class="hero-copy">
         <p class="eyebrow">FOCUS · PRACTICE · IMPROVE</p>
         <h2>十点半的 <span>PTE</span> 阅读小站</h2>
-        <p>像语法老师一样严谨，像八炸老师一样懂PTE，像GPT老师一样随时在，陪你直到PTE下岸。</p>
+        <p>像语法老师一样严谨，像八炸老师一样懂PTE，像GPT老师一样随时在，陪你直到PTE上岸。</p>
         <div class="hero-metrics" aria-label="学习统计">
           <div class="hero-metric">
             <span class="metric-icon purple">⌁</span>
@@ -141,6 +141,18 @@
                 <button class="ghost-button danger mini-button" id="overview-clear-records" type="button">清空做题记录</button>
               </div>
             </article>
+
+            <article class="overview-card overview-card-favorites">
+              <div class="overview-card-icon">☆</div>
+              <div>
+                <h4>题目收藏夹</h4>
+                <p><span id="overview-favorite-count">0</span> 题</p>
+              </div>
+              <div class="overview-card-actions">
+                <button class="secondary-button mini-button" id="overview-start-favorites" type="button">开始练习</button>
+                <button class="secondary-button mini-button" id="overview-random-favorites" type="button">随机练习</button>
+              </div>
+            </article>
           </div>
         </section>
 
@@ -210,7 +222,10 @@
             <p id="question-meta" class="eyebrow"></p>
             <h2 id="question-title"></h2>
           </div>
-          <div class="score-pill" id="score-pill">未提交</div>
+          <div class="question-toolbar-actions">
+            <button id="favorite-question" class="favorite-question-button" type="button" aria-pressed="false">收藏</button>
+            <div class="score-pill" id="score-pill">未提交</div>
+          </div>
         </div>
 
         <article id="passage" class="passage"></article>
@@ -272,8 +287,8 @@
     </main>
 
     <main id="review-page" class="standalone-page hidden">
-      <section class="standalone-panel">
-        <div class="section-head">
+      <section class="standalone-panel review-type-panel">
+        <div class="section-head review-type-hero">
           <div>
             <p class="eyebrow">REVIEW</p>
             <h2>错题复盘</h2>
@@ -304,8 +319,27 @@
           </div>
           <button id="review-type-back" class="secondary-button mini-button" type="button">返回题型选择</button>
         </div>
-        <section class="panel">
-          <h2>弱项考点</h2>
+        <section class="panel review-accuracy-panel">
+          <div class="section-head compact">
+            <h2>正确率分类</h2>
+            <div class="review-filter-tabs" aria-label="正确率筛选">
+              <button id="review-accuracy-collapse" class="mini-button secondary-button" type="button" data-review-accuracy="">收回</button>
+              <button id="review-accuracy-low" class="mini-button secondary-button" type="button" data-review-accuracy="low">40%以下</button>
+              <button id="review-accuracy-mid" class="mini-button secondary-button" type="button" data-review-accuracy="mid">40%-80%</button>
+              <button id="review-accuracy-high" class="mini-button secondary-button" type="button" data-review-accuracy="high">80%以上</button>
+            </div>
+          </div>
+          <div id="review-accuracy-question-list" class="review-question-list"></div>
+          <div class="pagination standalone-pagination" aria-label="review accuracy pagination">
+            <button id="review-accuracy-prev-page" class="page-button" type="button">上一页</button>
+            <span id="review-accuracy-page-info" class="page-info">第 1 / 1 页</span>
+            <button id="review-accuracy-next-page" class="page-button" type="button">下一页</button>
+          </div>
+        </section>
+        <section class="panel review-weakness-panel">
+          <div class="section-head compact">
+            <h2>弱项考点</h2>
+          </div>
           <div id="review-weakness-list" class="weakness-list"></div>
         </section>
       </section>
@@ -448,6 +482,6 @@
     <script src="data/wordlists/local_dictionary.js"></script>
     <script src="data/wordlists/ielts_core_vocab.js"></script>
     <script src="data/questions.js?v=current-sources-20260612"></script>
-    <script src="js/app.js?v=vocab-review-phonetic-20260611"></script>
+  <script src="js/app.js?v=review-dashboard-polish-20260613"></script>
   </body>
 </html>

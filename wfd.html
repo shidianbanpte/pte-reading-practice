@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WFD Practice</title>
+    <link rel="stylesheet" href="css/main.css?v=wfd-review-20260620" />
+  </head>
+  <body class="wfd-page">
+    <header class="app-header">
+      <div class="brand-block">
+        <span class="brand-mark wfd-brand-mark" aria-hidden="true">W</span>
+        <div>
+          <h1>WFD Practice</h1>
+          <p class="update-stamp">195 道题目 · 高频题库</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="ghost-button" href="index.html"><span class="nav-icon">⌂</span>总览</a>
+        <a class="ghost-button" href="index.html"><span class="nav-icon">☷</span>FIBRW下拉</a>
+        <a class="ghost-button" href="index.html"><span class="nav-icon">☷</span>FIBR拖拽</a>
+        <a class="ghost-button wfd-nav-button active" href="wfd.html"><span class="wfd-nav-icon" aria-hidden="true">W</span><span>WFD听写</span></a>
+        <a class="ghost-button" href="index.html"><span class="nav-icon">▱</span>我的单词库</a>
+        <button id="wfd-reset-records" class="ghost-button danger" type="button"><span class="nav-icon">⌫</span>清空记录</button>
+      </div>
+    </header>
+
+    <main class="wfd-layout">
+      <aside class="sidebar wfd-sidebar">
+        <section class="panel">
+          <div class="wfd-sidebar-head">
+            <h2>WFD 题库</h2>
+          </div>
+          <div class="wfd-mode-row">
+            <select id="wfd-search" class="wfd-mode-select" aria-label="WFD 练习模式">
+              <option value="all">全部</option>
+              <option value="done">已做</option>
+              <option value="undone">未做</option>
+            </select>
+            <button id="wfd-toggle-list-answers" class="wfd-icon-button" type="button" aria-label="显示左侧句子">⌘</button>
+          </div>
+          <p class="wfd-sidebar-tip">答案默认隐藏，点击可查看</p>
+          <div id="wfd-list" class="question-list"></div>
+          <button id="wfd-random" class="wfd-random-button" type="button">⌘ 随机抽题</button>
+        </section>
+      </aside>
+
+      <section class="workspace wfd-workspace">
+        <div class="question-toolbar wfd-question-toolbar">
+          <div>
+            <p id="wfd-meta" class="eyebrow">WFD</p>
+            <h2 id="wfd-title">Write From Dictation</h2>
+          </div>
+        </div>
+
+        <section class="wfd-practice-panel">
+          <div class="wfd-audio-row wfd-control-row">
+            <button id="wfd-play" class="wfd-play-button" type="button"><span>▶</span>播放</button>
+            <button id="wfd-slow" class="secondary-button" type="button">♣ 慢速播放（0.8x）</button>
+            <button id="wfd-show-answer" class="secondary-button wfd-answer-toggle" type="button">◉ 显示答案</button>
+            <div class="wfd-control-spacer"></div>
+            <button id="wfd-favorite" class="secondary-button wfd-favorite-button" type="button" aria-pressed="false">收藏</button>
+          </div>
+          <div class="wfd-input-card">
+            <textarea id="wfd-answer-input" class="wfd-answer-input" rows="5" maxlength="500" spellcheck="false" placeholder="听完后在这里写下完整句子"></textarea>
+            <span id="wfd-char-count" class="wfd-char-count">0 / 500</span>
+          </div>
+          <div class="wfd-audio-row wfd-submit-row">
+            <button id="wfd-submit" class="primary-button" type="button">提交校对</button>
+            <button id="wfd-redo" class="secondary-button" type="button">重做</button>
+            <span class="wfd-submit-spacer"></span>
+            <button id="wfd-prev" class="secondary-button" type="button">‹ 上一题</button>
+            <button id="wfd-next" class="secondary-button" type="button">下一题 ›</button>
+          </div>
+          <div id="wfd-result" class="wfd-result hidden"></div>
+        </section>
+
+        <div id="wfd-answer" class="wfd-answer hidden"></div>
+        <div id="wfd-word-card" class="word-card hidden" role="dialog" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="data/wordlists/local_dictionary.js"></script>
+    <script src="data/wordlists/ielts_core_vocab.js"></script>
+    <script src="data/wfd.js?v=wfd-periods-20260620"></script>
+    <script src="js/wfd.js?v=wfd-pdf-filename-20260620"></script>
+  </body>
+</html>

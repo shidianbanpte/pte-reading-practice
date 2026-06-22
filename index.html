@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PTE Reading Practice</title>
-    <link rel="stylesheet" href="css/main.css?v=dragdrop-fix-20260613" />
+    <link rel="stylesheet" href="css/main.css?v=lookup-capture-20260621" />
   </head>
   <body>
     <header class="app-header">
@@ -13,7 +13,7 @@
         <div>
         <p class="eyebrow">PTE Reading</p>
         <h1>PTE Reading Practice</h1>
-        <p class="update-stamp">更新时间：2026.6.13</p>
+        <p class="update-stamp">更新时间：2026.6.21</p>
         </div>
       </div>
       <div class="header-actions">
@@ -72,9 +72,6 @@
             <h2>学习总览</h2>
             <p class="item-meta">选择一个模块开始练习或复盘。</p>
           </div>
-          <div class="mini-actions">
-            <button id="overview-random" class="secondary-button mini-button" type="button">随机练习</button>
-          </div>
         </div>
 
         <section class="overview-group">
@@ -101,7 +98,6 @@
               </div>
               <div class="overview-card-actions">
                 <button class="secondary-button mini-button" id="overview-start-fibrw" type="button">浏览题库</button>
-                <button class="secondary-button mini-button" id="overview-random-fibrw" type="button">随机练习</button>
               </div>
             </article>
 
@@ -126,7 +122,6 @@
               </div>
               <div class="overview-card-actions">
                 <button class="secondary-button mini-button" id="overview-start-fibr" type="button">浏览题库</button>
-                <button class="secondary-button mini-button" id="overview-random-fibr" type="button">随机练习</button>
               </div>
             </article>
 
@@ -138,7 +133,6 @@
               </div>
               <div class="overview-card-actions">
                 <button class="secondary-button mini-button" id="overview-review-errors" type="button">查看弱项</button>
-                <button class="ghost-button danger mini-button" id="overview-clear-records" type="button">清空做题记录</button>
               </div>
             </article>
 
@@ -150,7 +144,11 @@
               </div>
               <div class="overview-card-actions">
                 <button class="secondary-button mini-button" id="overview-start-favorites" type="button">开始练习</button>
-                <button class="secondary-button mini-button" id="overview-random-favorites" type="button">随机练习</button>
+              </div>
+              <div class="favorite-category-actions" id="overview-favorite-categories" aria-label="题目收藏分类">
+                <button class="secondary-button mini-button" id="overview-favorites-fibrw" type="button">FIB-RW <span id="overview-favorite-fibrw-count">0</span></button>
+                <button class="secondary-button mini-button" id="overview-favorites-fibr" type="button">FIB-R <span id="overview-favorite-fibr-count">0</span></button>
+                <button class="secondary-button mini-button" id="overview-favorites-wfd" type="button">WFD <span id="overview-favorite-wfd-count">0</span></button>
               </div>
             </article>
           </div>
@@ -223,6 +221,7 @@
             <h2 id="question-title"></h2>
           </div>
           <div class="question-toolbar-actions">
+            <div class="question-timer" id="question-timer" aria-live="polite">答题时间：00:00</div>
             <button id="favorite-question" class="favorite-question-button" type="button" aria-pressed="false">收藏</button>
             <div class="score-pill" id="score-pill">未提交</div>
           </div>
@@ -237,7 +236,16 @@
           <button id="submit-answer" class="primary-button" type="button">提交答案</button>
           <button id="retry-question" class="secondary-button" type="button">重做本题</button>
           <button id="toggle-analysis" class="secondary-button" type="button">查看解析与翻译</button>
+          <button id="toggle-current-history" class="secondary-button" type="button">练习记录</button>
         </div>
+
+        <section id="current-history-panel" class="current-history-panel hidden">
+          <div class="practice-discussion-title">
+            <span></span>
+            <strong>练习记录</strong>
+          </div>
+          <div id="current-history-list" class="current-history-list"></div>
+        </section>
 
         <section id="analysis-panel" class="analysis-grid hidden">
           <div class="panel">
@@ -286,6 +294,33 @@
       </section>
     </main>
 
+    <main id="history-page" class="standalone-page hidden">
+      <section class="standalone-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">HISTORY</p>
+            <h2>答题历史</h2>
+            <p id="history-summary" class="item-meta"></p>
+          </div>
+          <div class="mini-actions">
+            <button id="history-back-practice" class="secondary-button mini-button" type="button">返回题库练习</button>
+            <button id="history-clear-records" class="ghost-button danger mini-button" type="button">清空做题记录</button>
+          </div>
+        </div>
+        <div class="history-filter-tabs" aria-label="答题历史筛选">
+          <button id="history-filter-all" class="mini-button secondary-button active" type="button" data-history-type="">全部</button>
+          <button id="history-filter-fibrw" class="mini-button secondary-button" type="button" data-history-type="FIB_RW">FIB-RW</button>
+          <button id="history-filter-fibr" class="mini-button secondary-button" type="button" data-history-type="FIB_R">FIB-R</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+        <div class="pagination standalone-pagination" aria-label="答题历史分页">
+          <button id="history-prev-page" class="page-button" type="button">上一页</button>
+          <span id="history-page-info" class="page-info">第 1 / 1 页</span>
+          <button id="history-next-page" class="page-button" type="button">下一页</button>
+        </div>
+      </section>
+    </main>
+
     <main id="review-page" class="standalone-page hidden">
       <section class="standalone-panel review-type-panel">
         <div class="section-head review-type-hero">
@@ -304,6 +339,10 @@
           <button id="review-open-fibr" class="review-choice-card" type="button">
             <strong>FIB-R 拖拽</strong>
             <span id="review-fibr-summary">0 次记录</span>
+          </button>
+          <button id="review-open-wfd" class="review-choice-card" type="button">
+            <strong>WFD 听写</strong>
+            <span id="review-wfd-summary">0 次记录</span>
           </button>
         </div>
       </section>
@@ -481,7 +520,8 @@
 
     <script src="data/wordlists/local_dictionary.js"></script>
     <script src="data/wordlists/ielts_core_vocab.js"></script>
-    <script src="data/questions.js?v=sleepwalking-1336-20260613"></script>
-  <script src="js/app.js?v=dragdrop-fix-20260613"></script>
+    <script src="data/questions.js?v=fibr-june-lower-q16q88-fix-20260621"></script>
+    <script src="data/wfd.js?v=wfd-periods-20260620"></script>
+    <script src="js/app.js?v=questions-data-alias-fix-20260622"></script>
   </body>
 </html>

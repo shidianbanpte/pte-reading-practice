@@ -1,5 +1,7 @@
 const STORAGE_KEY = "pte_reading_practice_records_v1";
 const FAVORITE_QUESTIONS_STORAGE_KEY = "pte_reading_practice_favorite_questions_v1";
+const WFD_FAVORITE_PREFIX = "WFD:";
+const WFD_RECORDS_KEY = "pte_wfd_practice_records_v1";
 const VOCAB_STORAGE_KEY = "pte_reading_practice_vocab_bank_v1";
 const CUSTOM_CORE_STORAGE_KEY = "pte_reading_practice_teacher_pte_core_v1";
 const VOCAB_REVIEW_STORAGE_KEY = "pte_reading_practice_vocab_review_v1";
@@ -91,6 +93,9 @@ const state = {
   currentCoreVocabulary: [],
   currentOptionVocabulary: [],
   currentAttemptSubmitted: false,
+  questionStartedAt: 0,
+  questionElapsedMs: 0,
+  questionTimerId: null,
   practiceLabelFilter: "",
   practiceLabelType: "",
   practiceQuestionIds: [],
@@ -102,17 +107,21 @@ const state = {
   reviewAccuracyPage: 1,
   reviewWrongPage: 1,
   reviewRelatedPage: 1,
+  historyTypeFilter: "",
+  historyPage: 1,
 };
 
 const els = {};
 const dragSession = {
   token: null,
+  sourceBlank: null,
   value: "",
   ghost: null,
   target: null,
   startX: 0,
   startY: 0,
   dragging: false,
+  suppressBlankClick: false,
 };
 
 document.addEventListener("DOMContentLoaded", init);
@@ -120,6 +129,7 @@ document.addEventListener("DOMContentLoaded", init);
 async function init() {
   try {
     bindElements();
+    addWfdEntryPoints();
     bindEvents();
     if (!ensureAccessAllowed()) return;
     const savedRecords = loadRecords();
@@ -127,7 +137,7 @@ async function init() {
     state.wordbook = loadWordbook();
     state.customCoreWords = loadTeacherWordMap(CUSTOM_CORE_STORAGE_KEY);
     state.vocabReviewRecords = loadVocabReviewRecords();
-    const data = window.PTE_QUESTIONS_DATA || window.QUESTIONS || (await loadQuestionsJson());
+    const data = window.PTE_QUESTIONS_DATA || window.QUESTIONS_DATA || window.QUESTIONS || (await loadQuestionsJson());
     state.questions = data.questions || [];
     const migration = migrateRecordsToCurrentQuestions(savedRecords);
     state.records = migration.records;
@@ -137,6 +147,44 @@ async function init() {
     renderAll();
   } catch (error) {
     showBootError(error);
+  }
+}
+
+function addWfdEntryPoints() {
+  const headerActions = document.querySelector(".header-actions");
+  if (headerActions && !document.getElementById("open-wfd")) {
+    const link = document.createElement("a");
+    link.id = "open-wfd";
+    link.className = "ghost-button wfd-nav-button";
+    link.href = "wfd.html";
+    link.innerHTML = '<span class="wfd-nav-icon" aria-hidden="true">W</span><span>WFD听写</span>';
+    if (window.location.pathname.toLowerCase().endsWith("wfd.html")) {
+      link.classList.add("active");
+    }
+    const wordbookButton = document.getElementById("open-wordbook");
+    headerActions.insertBefore(link, wordbookButton || headerActions.firstChild);
+  }
+
+  const firstOverviewGrid = document.querySelector(".overview-group .overview-card-grid");
+  if (firstOverviewGrid && !document.getElementById("overview-start-wfd")) {
+    const card = document.createElement("article");
+    card.className = "overview-card overview-card-wfd";
+    card.innerHTML = `
+      <div class="overview-card-icon">W</div>
+      <div>
+        <h4>WFD 听写</h4>
+        <p><span id="overview-wfd-count">0</span> 题</p>
+      </div>
+      <div class="overview-card-actions">
+        <button class="secondary-button mini-button" id="overview-start-wfd" type="button">开始练习</button>
+        <button class="secondary-button mini-button" id="overview-wfd-export" type="button">导出PDF</button>
+      </div>
+    `;
+    firstOverviewGrid.appendChild(card);
+    card.querySelector("#overview-start-wfd")?.addEventListener("click", () => {
+      window.location.href = "wfd.html";
+    });
+    card.querySelector("#overview-wfd-export")?.addEventListener("click", exportWfdPdfFromOverview);
   }
 }
 
@@ -233,6 +281,7 @@ function bindElements() {
     "question-list",
     "overview-page",
     "practice-page",
+    "history-page",
     "review-page",
     "review-type-page",
     "review-detail-page",
@@ -243,9 +292,7 @@ function bindElements() {
     "overview-browse-bank",
     "overview-open-wordbook",
     "overview-open-records",
-    "overview-random",
     "overview-start-fibrw",
-    "overview-random-fibrw",
     "overview-fibrw-very-high",
     "overview-fibrw-high",
     "overview-fibrw-medium",
@@ -253,7 +300,6 @@ function bindElements() {
     "overview-fibrw-high-count",
     "overview-fibrw-medium-count",
     "overview-start-fibr",
-    "overview-random-fibr",
     "overview-fibr-very-high",
     "overview-fibr-high",
     "overview-fibr-medium",
@@ -261,10 +307,14 @@ function bindElements() {
     "overview-fibr-high-count",
     "overview-fibr-medium-count",
     "overview-review-errors",
-    "overview-clear-records",
     "overview-favorite-count",
     "overview-start-favorites",
-    "overview-random-favorites",
+    "overview-favorite-fibrw-count",
+    "overview-favorite-fibr-count",
+    "overview-favorite-wfd-count",
+    "overview-favorites-fibrw",
+    "overview-favorites-fibr",
+    "overview-favorites-wfd",
     "overview-wordbook-jump",
     "overview-wordbook-review",
     "overview-wordbook-export",
@@ -283,10 +333,24 @@ function bindElements() {
     "page-info",
     "practice-context",
     "weakness-list",
+    "current-history-panel",
+    "current-history-list",
+    "history-summary",
+    "history-list",
+    "history-back-practice",
+    "history-clear-records",
+    "history-filter-all",
+    "history-filter-fibrw",
+    "history-filter-fibr",
+    "history-prev-page",
+    "history-next-page",
+    "history-page-info",
     "review-open-fibrw",
     "review-open-fibr",
+    "review-open-wfd",
     "review-fibrw-summary",
     "review-fibr-summary",
+    "review-wfd-summary",
     "review-type-title",
     "review-type-summary",
     "review-weakness-list",
@@ -347,6 +411,7 @@ function bindElements() {
     "question-meta",
     "question-title",
     "favorite-question",
+    "question-timer",
     "score-pill",
     "passage",
     "word-card",
@@ -355,6 +420,7 @@ function bindElements() {
     "submit-answer",
     "retry-question",
     "toggle-analysis",
+    "toggle-current-history",
     "result-panel",
     "core-vocab-panel",
     "core-vocab-count",
@@ -468,6 +534,14 @@ function bindEvents() {
       showAnalysisPanel();
     }
   });
+  on("toggle-current-history", "click", () => {
+    const isHidden = els["current-history-panel"].classList.toggle("hidden");
+    if (isHidden) {
+      hideCurrentQuestionHistoryPanel();
+    } else {
+      showCurrentQuestionHistoryPanel();
+    }
+  });
   on("reset-records", "click", resetRecords);
   on("wordbook-clear", "click", clearWordbook);
   on("wordbook-page-edit", "click", toggleWordbookEditMode);
@@ -480,22 +554,41 @@ function bindEvents() {
     renderAll();
   });
   on("overview-open-wordbook", "click", showWordbookPage);
-  on("overview-open-records", "click", showReviewPage);
-  on("overview-random", "click", () => startRandomQuestion());
+  on("overview-open-records", "click", showHistoryPage);
   on("overview-start-fibrw", "click", () => startQuestionType("FIB_RW"));
-  on("overview-random-fibrw", "click", () => startRandomQuestion("FIB_RW"));
   on("overview-fibrw-very-high", "click", () => startQuestionSet("FIB_RW", "极高频"));
   on("overview-fibrw-high", "click", () => startQuestionSet("FIB_RW", "高频"));
   on("overview-fibrw-medium", "click", () => startQuestionSet("FIB_RW", "中频"));
   on("overview-start-fibr", "click", () => startQuestionType("FIB_R"));
-  on("overview-random-fibr", "click", () => startRandomQuestion("FIB_R"));
   on("overview-fibr-very-high", "click", () => startQuestionSet("FIB_R", "极高频"));
   on("overview-fibr-high", "click", () => startQuestionSet("FIB_R", "高频"));
   on("overview-fibr-medium", "click", () => startQuestionSet("FIB_R", "中频"));
   on("overview-review-errors", "click", showReviewPage);
-  on("overview-clear-records", "click", resetRecords);
+  on("history-back-practice", "click", () => {
+    clearPracticeLabelFilter();
+    showPractice();
+    renderAll();
+  });
+  on("history-clear-records", "click", resetRecords);
+  ["history-filter-all", "history-filter-fibrw", "history-filter-fibr"].forEach((id) => {
+    on(id, "click", () => {
+      state.historyTypeFilter = els[id]?.dataset.historyType || "";
+      state.historyPage = 1;
+      renderHistoryPage();
+    });
+  });
+  on("history-prev-page", "click", () => {
+    state.historyPage = Math.max(1, state.historyPage - 1);
+    renderHistoryPage();
+  });
+  on("history-next-page", "click", () => {
+    state.historyPage += 1;
+    renderHistoryPage();
+  });
   on("overview-start-favorites", "click", startFavoriteQuestions);
-  on("overview-random-favorites", "click", startRandomFavoriteQuestion);
+  on("overview-favorites-fibrw", "click", () => startFavoriteQuestionsByType("FIB_RW"));
+  on("overview-favorites-fibr", "click", () => startFavoriteQuestionsByType("FIB_R"));
+  on("overview-favorites-wfd", "click", startWfdFavoriteQuestions);
   on("overview-wordbook-jump", "click", showWordbookPage);
   on("overview-wordbook-review", "click", () => startVocabReview("wordbook"));
   on("overview-wordbook-export", "click", exportWordbook);
@@ -509,6 +602,7 @@ function bindEvents() {
   });
   on("review-open-fibrw", "click", () => showReviewTypePage("FIB_RW"));
   on("review-open-fibr", "click", () => showReviewTypePage("FIB_R"));
+  on("review-open-wfd", "click", () => showReviewTypePage("WFD"));
   on("review-type-back", "click", showReviewPage);
   on("review-detail-back", "click", () => showReviewTypePage(state.reviewTypeFilter));
   ["review-accuracy-collapse", "review-accuracy-low", "review-accuracy-mid", "review-accuracy-high"].forEach((id) => {
@@ -570,9 +664,17 @@ function bindEvents() {
   on("teacher-export-vocab", "click", exportTeacherVocab);
   if (els["passage"]) {
     els["passage"].addEventListener("click", handlePassageWordClick);
+    els["passage"].addEventListener("pointerdown", handlePassageWordPointerDown, true);
   }
   document.addEventListener("keydown", handleTeacherModeShortcut);
+  document.addEventListener("pointerup", handleGlobalLookupInteraction, true);
+  document.addEventListener("click", handleGlobalLookupInteraction, true);
   document.addEventListener("click", (event) => {
+    const wordNode = event.target.closest(".lookup-word");
+    if (wordNode && els["passage"]?.contains(wordNode)) {
+      handlePassageWordClick(event);
+      return;
+    }
     if (!event.target.closest(".word-card") && !event.target.closest(".lookup-word")) {
       hideWordCard();
     }
@@ -606,6 +708,9 @@ function renderAll() {
   renderWordbook();
   renderOverview();
   renderQuestion(getCurrentQuestion());
+  if (els["history-page"] && !els["history-page"].classList.contains("hidden")) {
+    renderHistoryPage();
+  }
 }
 
 function getCurrentQuestion() {
@@ -742,7 +847,7 @@ function updateHeaderNavigation(activeId) {
   const wordPages = new Set(["wordbook-page", "core-vocab-page", "vocab-review-page"]);
   const practicePages = new Set(["practice-page"]);
   const overviewPages = new Set(["overview-page"]);
-  const reviewPages = new Set(["review-page", "review-type-page", "review-detail-page"]);
+  const reviewPages = new Set(["history-page", "review-page", "review-type-page", "review-detail-page"]);
   const navState = wordPages.has(activeId)
     ? "wordbook"
     : practicePages.has(activeId)
@@ -776,6 +881,13 @@ function showPractice(options = {}) {
 function showReviewPage() {
   renderReviewOverview();
   showOnlyPage("review-page");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showHistoryPage() {
+  state.historyPage = 1;
+  renderHistoryPage();
+  showOnlyPage("history-page");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -814,7 +926,7 @@ function showWordbookPage() {
 }
 
 function showOnlyPage(activeId) {
-  ["overview-page", "practice-page", "review-page", "review-type-page", "review-detail-page", "core-vocab-page", "wordbook-page", "vocab-review-page"].forEach((id) => {
+  ["overview-page", "practice-page", "history-page", "review-page", "review-type-page", "review-detail-page", "core-vocab-page", "wordbook-page", "vocab-review-page"].forEach((id) => {
     els[id]?.classList.toggle("hidden", id !== activeId);
   });
   updateHeaderNavigation(activeId);
@@ -863,10 +975,22 @@ function getFavoriteQuestions() {
   return state.questions.filter((question) => state.favoriteQuestionIds.has(question.id));
 }
 
+function getFavoriteQuestionsByType(type) {
+  return state.questions.filter((question) => question.type === type && state.favoriteQuestionIds.has(question.id));
+}
+
+function getWfdFavoriteCount() {
+  return Array.from(state.favoriteQuestionIds).filter((id) => String(id).startsWith(WFD_FAVORITE_PREFIX)).length;
+}
+
 function startFavoriteQuestions() {
   clearPracticeLabelFilter();
   const favorites = getFavoriteQuestions();
   if (!favorites.length) {
+    if (getWfdFavoriteCount()) {
+      startWfdFavoriteQuestions();
+      return;
+    }
     showToast("还没有收藏题目");
     return;
   }
@@ -882,10 +1006,40 @@ function startFavoriteQuestions() {
   renderAll();
 }
 
+function startFavoriteQuestionsByType(type) {
+  clearPracticeLabelFilter();
+  const favorites = getFavoriteQuestionsByType(type);
+  if (!favorites.length) {
+    showToast(type === "FIB_R" ? "还没有收藏 FIB-R 题目" : "还没有收藏 FIB-RW 题目");
+    return;
+  }
+  state.typeFilter = type;
+  state.frequencyFilter = null;
+  state.favoriteFilter = "favorite";
+  state.questionStatusFilter = "all";
+  state.questionPage = 1;
+  state.currentId = favorites[0].id;
+  ensureCurrentQuestionInFilter();
+  showPractice();
+  renderAll();
+}
+
+function startWfdFavoriteQuestions() {
+  if (!getWfdFavoriteCount()) {
+    showToast("还没有收藏 WFD 题目");
+    return;
+  }
+  window.location.href = "wfd.html?favorites=1";
+}
+
 function startRandomFavoriteQuestion() {
   clearPracticeLabelFilter();
   const favorites = getFavoriteQuestions();
   if (!favorites.length) {
+    if (getWfdFavoriteCount()) {
+      startWfdFavoriteQuestions();
+      return;
+    }
     showToast("还没有收藏题目");
     return;
   }
@@ -916,8 +1070,17 @@ function renderOverview() {
   setText("overview-fibr-very-high-count", countQuestions("FIB_R", "极高频"));
   setText("overview-fibr-high-count", countQuestions("FIB_R", "高频"));
   setText("overview-fibr-medium-count", countQuestions("FIB_R", "中频"));
-  setText("overview-record-count", state.records.length);
-  setText("overview-favorite-count", state.favoriteQuestionIds.size);
+  setText("overview-wfd-count", window.PTE_WFD_DATA?.meta?.question_count || 195);
+  setText("overview-record-count", state.records.length + getWfdReviewRecords().length);
+  const favoriteTypeCounts = {
+    FIB_RW: getFavoriteQuestionsByType("FIB_RW").length,
+    FIB_R: getFavoriteQuestionsByType("FIB_R").length,
+    WFD: getWfdFavoriteCount(),
+  };
+  setText("overview-favorite-count", favoriteTypeCounts.FIB_RW + favoriteTypeCounts.FIB_R + favoriteTypeCounts.WFD);
+  setText("overview-favorite-fibrw-count", favoriteTypeCounts.FIB_RW);
+  setText("overview-favorite-fibr-count", favoriteTypeCounts.FIB_R);
+  setText("overview-favorite-wfd-count", favoriteTypeCounts.WFD);
   setText("overview-wordbook-count", state.wordbook.size);
   setText("overview-core-count", state.coreWordIndex.size);
   setText("overview-fibrw-accuracy-count", getAverageAccuracy("FIB_RW"));
@@ -956,6 +1119,9 @@ function compareQuestionsByFrequency(a, b) {
 }
 
 function setText(id, value) {
+  if (!els[id]) {
+    els[id] = document.getElementById(id);
+  }
   if (els[id]) {
     els[id].textContent = String(value);
   }
@@ -999,8 +1165,56 @@ function updateQuestionNavButtons() {
   }
 }
 
+function startQuestionTimer() {
+  stopQuestionTimer(false);
+  state.questionStartedAt = Date.now();
+  state.questionElapsedMs = 0;
+  updateQuestionTimer(0);
+  state.questionTimerId = window.setInterval(() => updateQuestionTimer(), 1000);
+}
+
+function stopQuestionTimer(updateDisplay = true) {
+  if (state.questionTimerId) {
+    window.clearInterval(state.questionTimerId);
+    state.questionTimerId = null;
+  }
+  if (state.questionStartedAt) {
+    state.questionElapsedMs = Date.now() - state.questionStartedAt;
+    state.questionStartedAt = 0;
+  }
+  if (updateDisplay) {
+    updateQuestionTimer(state.questionElapsedMs);
+  }
+  return state.questionElapsedMs || 0;
+}
+
+function updateQuestionTimer(value) {
+  const timer = els["question-timer"];
+  if (!timer) return;
+  const elapsed = typeof value === "number"
+    ? value
+    : state.questionStartedAt
+      ? Date.now() - state.questionStartedAt
+      : state.questionElapsedMs || 0;
+  timer.textContent = `答题时间：${formatElapsedTime(elapsed)}`;
+  timer.classList.toggle("running", Boolean(state.questionTimerId));
+}
+
+function formatElapsedTime(ms) {
+  const totalSeconds = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function renderQuestion(question) {
   if (!question) {
+    stopQuestionTimer(false);
+    updateQuestionTimer(0);
     els["question-title"].textContent = "暂无题目";
     els["favorite-question"]?.classList.add("hidden");
     return;
@@ -1025,11 +1239,14 @@ function renderQuestion(question) {
   els["analysis-panel"].classList.add("hidden");
   els["toggle-analysis"].className = "secondary-button";
   els["toggle-analysis"].textContent = "查看解析与翻译";
+  hideCurrentQuestionHistoryPanel();
   els["submit-answer"].classList.remove("active");
   els["score-pill"].className = "score-pill";
   els["score-pill"].textContent = "未提交";
+  renderCurrentQuestionHistory(question);
   updateQuestionNavButtons();
   hideWordCard();
+  startQuestionTimer();
 }
 
 function updateFavoriteQuestionButton(question = getCurrentQuestion()) {
@@ -1099,9 +1316,12 @@ function renderDragDropQuestion(question) {
     drop.addEventListener("dragover", handleBlankDragOver);
     drop.addEventListener("dragleave", handleBlankDragLeave);
     drop.addEventListener("drop", handleBlankDrop);
+    drop.addEventListener("dragstart", handleBlankDragStart);
+    drop.addEventListener("pointerdown", handleBlankPointerDown);
     drop.addEventListener("click", handleBlankClick);
     select.replaceWith(drop);
   });
+  els["passage"].querySelectorAll(".drag-blank:not(button)").forEach(setupExistingDragBlank);
 
   const options = getQuestionOptionPool(question);
   const bank = document.createElement("div");
@@ -1117,11 +1337,31 @@ function renderDragDropQuestion(question) {
     )
     .join("");
   els["passage"].appendChild(bank);
+  bank.addEventListener("dragover", handleBankDragOver);
+  bank.addEventListener("dragleave", handleBankDragLeave);
+  bank.addEventListener("drop", handleBankDrop);
+  bank.addEventListener("click", handleBankClick);
   bank.querySelectorAll(".drag-token").forEach((token) => {
     token.addEventListener("dragstart", handleTokenDragStart);
     token.addEventListener("pointerdown", handleTokenPointerDown);
     token.addEventListener("click", handleTokenClick);
   });
+}
+
+function setupExistingDragBlank(blank) {
+  const blankIndex = blank.dataset.blankIndex || "";
+  blank.dataset.value = blank.dataset.value || "";
+  blank.textContent = blank.dataset.value || "";
+  blank.draggable = Boolean(blank.dataset.value);
+  blank.setAttribute("role", "button");
+  blank.setAttribute("tabindex", "0");
+  blank.setAttribute("aria-label", `第 ${blankIndex} 空`);
+  blank.addEventListener("dragover", handleBlankDragOver);
+  blank.addEventListener("dragleave", handleBlankDragLeave);
+  blank.addEventListener("drop", handleBlankDrop);
+  blank.addEventListener("dragstart", handleBlankDragStart);
+  blank.addEventListener("pointerdown", handleBlankPointerDown);
+  blank.addEventListener("click", handleBlankClick);
 }
 
 function decorateAnalysisText() {
@@ -1160,6 +1400,19 @@ function handleTokenDragStart(event) {
   }
   event.dataTransfer.effectAllowed = "move";
   event.dataTransfer.setData("text/plain", event.currentTarget.dataset.option || "");
+  event.dataTransfer.setData("application/x-drag-source", "bank");
+}
+
+function handleBlankDragStart(event) {
+  const value = event.currentTarget.dataset.value || "";
+  if (!value) {
+    event.preventDefault();
+    return;
+  }
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", value);
+  event.dataTransfer.setData("application/x-drag-source", "blank");
+  event.dataTransfer.setData("application/x-source-blank-index", event.currentTarget.dataset.blankIndex || "");
 }
 
 function handleBlankDragOver(event) {
@@ -1178,16 +1431,59 @@ function handleBlankDrop(event) {
   event.preventDefault();
   event.currentTarget.classList.remove("drag-over");
   const value = event.dataTransfer.getData("text/plain");
+  const sourceBlankIndex = event.dataTransfer.getData("application/x-source-blank-index");
+  const sourceBlank = sourceBlankIndex ? getDragBlankByIndex(sourceBlankIndex) : null;
   if (value) {
-    setDragBlankValue(event.currentTarget, value);
+    moveDragValueToBlank(event.currentTarget, value, sourceBlank);
+  }
+}
+
+function handleBankDragOver(event) {
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+  event.currentTarget.classList.add("drag-over");
+}
+
+function handleBankDragLeave(event) {
+  if (event.currentTarget.contains(event.relatedTarget)) return;
+  event.currentTarget.classList.remove("drag-over");
+}
+
+function handleBankDrop(event) {
+  event.preventDefault();
+  event.currentTarget.classList.remove("drag-over");
+  const sourceBlankIndex = event.dataTransfer.getData("application/x-source-blank-index");
+  const sourceBlank = sourceBlankIndex ? getDragBlankByIndex(sourceBlankIndex) : null;
+  returnDragValueToBank(sourceBlank);
+}
+
+function handleBankClick(event) {
+  if (event.target.closest(".drag-token")) return;
+  const selectedBlank = els["passage"].querySelector(".drag-blank.selected");
+  if (selectedBlank?.dataset.value) {
+    returnDragValueToBank(selectedBlank);
   }
 }
 
 function handleTokenPointerDown(event) {
   const token = event.currentTarget;
   if (token.disabled || event.button !== 0) return;
-  dragSession.token = token;
-  dragSession.value = token.dataset.option || "";
+  beginPointerDrag(event, token, token.dataset.option || "", null);
+}
+
+function handleBlankPointerDown(event) {
+  const blank = event.currentTarget;
+  const value = blank.dataset.value || "";
+  if (!value || event.button !== 0) return;
+  beginPointerDrag(event, blank, value, blank);
+}
+
+function beginPointerDrag(event, sourceElement, value, sourceBlank) {
+  dragSession.token = sourceElement;
+  dragSession.sourceBlank = sourceBlank;
+  dragSession.value = value;
   dragSession.startX = event.clientX;
   dragSession.startY = event.clientY;
   dragSession.dragging = false;
@@ -1209,11 +1505,16 @@ function handleTokenPointerMove(event) {
   }
   moveDragGhost(event.clientX, event.clientY);
   els["passage"].querySelectorAll(".drag-blank.drag-over").forEach((blank) => blank.classList.remove("drag-over"));
+  els["passage"].querySelectorAll(".drag-option-bank.drag-over").forEach((bank) => bank.classList.remove("drag-over"));
   const element = document.elementFromPoint(event.clientX, event.clientY);
-  const target = element?.closest?.(".drag-blank");
-  if (target && els["passage"].contains(target)) {
-    target.classList.add("drag-over");
-    dragSession.target = target;
+  const blankTarget = element?.closest?.(".drag-blank");
+  const bankTarget = element?.closest?.(".drag-option-bank");
+  if (blankTarget && els["passage"].contains(blankTarget)) {
+    blankTarget.classList.add("drag-over");
+    dragSession.target = blankTarget;
+  } else if (dragSession.sourceBlank && bankTarget && els["passage"].contains(bankTarget)) {
+    bankTarget.classList.add("drag-over");
+    dragSession.target = bankTarget;
   } else {
     dragSession.target = null;
   }
@@ -1221,7 +1522,15 @@ function handleTokenPointerMove(event) {
 
 function handleTokenPointerUp() {
   if (dragSession.dragging && dragSession.target && dragSession.value) {
-    setDragBlankValue(dragSession.target, dragSession.value);
+    if (dragSession.target.classList.contains("drag-option-bank")) {
+      returnDragValueToBank(dragSession.sourceBlank);
+    } else {
+      moveDragValueToBlank(dragSession.target, dragSession.value, dragSession.sourceBlank);
+    }
+    dragSession.suppressBlankClick = true;
+    window.setTimeout(() => {
+      dragSession.suppressBlankClick = false;
+    }, 0);
   }
   cancelTokenPointerDrag();
 }
@@ -1244,9 +1553,11 @@ function cancelTokenPointerDrag() {
   document.removeEventListener("pointermove", handleTokenPointerMove);
   document.removeEventListener("pointercancel", cancelTokenPointerDrag);
   els["passage"]?.querySelectorAll(".drag-blank.drag-over").forEach((blank) => blank.classList.remove("drag-over"));
+  els["passage"]?.querySelectorAll(".drag-option-bank.drag-over").forEach((bank) => bank.classList.remove("drag-over"));
   dragSession.token?.classList.remove("dragging");
   dragSession.ghost?.remove();
   dragSession.token = null;
+  dragSession.sourceBlank = null;
   dragSession.value = "";
   dragSession.ghost = null;
   dragSession.target = null;
@@ -1268,6 +1579,7 @@ function handleTokenClick(event) {
 }
 
 function handleBlankClick(event) {
+  if (dragSession.suppressBlankClick) return;
   const blank = event.currentTarget;
   const selectedToken = els["passage"].querySelector(".drag-token.selected");
   if (selectedToken) {
@@ -1276,25 +1588,101 @@ function handleBlankClick(event) {
     return;
   }
   if (blank.dataset.value) {
-    setDragBlankValue(blank, "");
+    const selectedBlank = els["passage"].querySelector(".drag-blank.selected");
+    if (selectedBlank && selectedBlank !== blank) {
+      moveDragValueToBlank(blank, selectedBlank.dataset.value || "", selectedBlank);
+      selectedBlank.classList.remove("selected");
+      return;
+    }
+    if (selectedBlank === blank) {
+      setDragBlankValue(blank, "");
+      return;
+    }
+    els["passage"].querySelectorAll(".drag-blank.selected").forEach((item) => item.classList.remove("selected"));
+    blank.classList.add("selected");
+    return;
+  }
+  const selectedBlank = els["passage"].querySelector(".drag-blank.selected");
+  if (selectedBlank?.dataset.value) {
+    moveDragValueToBlank(blank, selectedBlank.dataset.value, selectedBlank);
+    selectedBlank.classList.remove("selected");
     return;
   }
   els["passage"].querySelectorAll(".drag-blank.selected").forEach((item) => item.classList.remove("selected"));
   blank.classList.add("selected");
 }
 
-function setDragBlankValue(blank, value) {
-  const oldValue = blank.dataset.value || "";
-  if (oldValue) {
-    releaseDragToken(oldValue);
-  }
-  if (value) {
-    reserveDragToken(value);
-  }
+function setDragBlankValue(blank, value, options = {}) {
   blank.dataset.value = value || "";
   blank.textContent = value || "";
+  blank.draggable = Boolean(value);
   blank.classList.toggle("filled", Boolean(value));
-  blank.classList.remove("drag-over", "correct", "incorrect");
+  blank.classList.remove("drag-over", "correct", "incorrect", "selected");
+  if (options.syncTokens !== false) {
+    syncDragTokenReservations();
+  }
+}
+
+function moveDragValueToBlank(targetBlank, value, sourceBlank = null) {
+  if (!targetBlank || !value || sourceBlank === targetBlank) return;
+  const targetValue = targetBlank.dataset.value || "";
+  if (sourceBlank) {
+    setDragBlankValue(sourceBlank, targetValue, { syncTokens: false });
+  }
+  setDragBlankValue(targetBlank, value, { syncTokens: false });
+  syncDragTokenReservations();
+}
+
+function returnDragValueToBank(sourceBlank) {
+  if (!sourceBlank?.dataset.value) return;
+  setDragBlankValue(sourceBlank, "");
+}
+
+function getDragBlankByIndex(blankIndex) {
+  return Array.from(els["passage"].querySelectorAll(".drag-blank")).find((blank) => {
+    return blank.dataset.blankIndex === String(blankIndex);
+  });
+}
+
+function syncDragTokenReservations() {
+  els["passage"].querySelectorAll(".drag-token").forEach((token) => {
+    token.disabled = false;
+    token.classList.remove("used");
+  });
+  els["passage"].querySelectorAll(".drag-blank.filled").forEach((blank) => {
+    reserveDragToken(blank.dataset.value || "");
+  });
+}
+
+function clearInlineAnswerFeedback() {
+  els["passage"]?.querySelectorAll(".inline-answer-feedback").forEach((node) => node.remove());
+}
+
+function showInlineAnswerFeedback(control, blank, isCorrect) {
+  if (!control) return;
+  const next = control.nextElementSibling;
+  if (next?.classList?.contains("inline-answer-feedback")) {
+    next.remove();
+  }
+  if (isCorrect) return;
+  const feedback = document.createElement("span");
+  feedback.className = "inline-answer-feedback";
+  const label = document.createElement("span");
+  label.textContent = "答案：";
+  const answer = document.createElement("span");
+  answer.className = "inline-answer-value";
+  answer.textContent = formatInlineAnswer(blank.answer);
+  feedback.append(label, answer, document.createTextNode(" "));
+  control.insertAdjacentElement("afterend", feedback);
+}
+
+function formatInlineAnswer(value) {
+  return String(value || "")
+    .replace(/\bin\s*addition\s*to\b/gi, "In addition to")
+    .replace(/\bas\s*a\s*result\s*of\b/gi, "As a result of")
+    .replace(/\binstead\s*of\b/gi, "Instead of")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function reserveDragToken(value) {
@@ -1331,6 +1719,8 @@ function submitCurrentQuestion() {
   els["score-pill"].className = "score-pill";
   els["score-pill"].textContent = "批改中";
   els["submit-answer"].classList.add("active");
+  const elapsedMs = stopQuestionTimer();
+  clearInlineAnswerFeedback();
 
   const selects = Array.from(els["passage"].querySelectorAll(".blank-select"));
   const dragBlanks = Array.from(els["passage"].querySelectorAll(".drag-blank"));
@@ -1342,11 +1732,13 @@ function submitCurrentQuestion() {
     if (select) {
       select.classList.toggle("correct", isCorrect);
       select.classList.toggle("incorrect", !isCorrect);
+      showInlineAnswerFeedback(select, blank, isCorrect);
     }
     if (dragBlank) {
       dragBlank.classList.toggle("correct", isCorrect);
       dragBlank.classList.toggle("incorrect", !isCorrect);
       dragBlank.classList.remove("selected", "drag-over");
+      showInlineAnswerFeedback(dragBlank, blank, isCorrect);
     }
     return {
       blank_index: blank.blank_index,
@@ -1368,19 +1760,20 @@ function submitCurrentQuestion() {
     createdAt: new Date().toISOString(),
     correct,
     total: details.length,
+    elapsedMs,
+    elapsedText: formatElapsedTime(elapsedMs),
     details,
   };
 
   state.records.unshift(record);
   state.submittedQuestionIds.add(question.id);
   state.currentAttemptSubmitted = true;
-  preparePassageLookup(question);
-  renderCoreVocabulary(question);
-  renderOptionVocabulary(question);
   renderResult(record);
+  renderCurrentQuestionHistory(question);
   showAnalysisPanel();
   renderWeaknessList();
   renderQuestionList();
+  enableSubmittedPassageLookup(question);
   saveRecords();
 }
 
@@ -1414,6 +1807,14 @@ function preparePassageLookup(question) {
   }
   els["passage"].classList.add("lookup-enabled");
   wrapTextNodesForLookup(els["passage"]);
+  bindLookupWords(els["passage"]);
+}
+
+function enableSubmittedPassageLookup(question) {
+  preparePassageLookup(question);
+  renderCoreVocabulary(question);
+  renderOptionVocabulary(question);
+  schedulePassageLookupRefresh(question);
 }
 
 function wrapTextNodesForLookup(root) {
@@ -1437,6 +1838,7 @@ function wrapTextNodesForLookup(root) {
         span.className = "lookup-word";
         span.textContent = part;
         span.dataset.word = normalizeLookupWord(part);
+        span.dataset.lookupBound = "";
         const coreEntry = findCoreWordEntry(part);
         if (coreEntry) {
           span.classList.add("core-vocab-hit");
@@ -1449,6 +1851,28 @@ function wrapTextNodesForLookup(root) {
     });
     node.parentNode.replaceChild(fragment, node);
   });
+}
+
+function bindLookupWords(root) {
+  root.querySelectorAll(".lookup-word").forEach((node) => {
+    if (node.dataset.lookupBound === "true") return;
+    node.dataset.lookupBound = "true";
+    node.addEventListener("click", handlePassageWordClick);
+  });
+}
+
+function schedulePassageLookupRefresh(question) {
+  if (!question) return;
+  const questionId = question.id;
+  const refresh = () => {
+    if (!state.currentAttemptSubmitted || state.currentId !== questionId) return;
+    preparePassageLookup(question);
+  };
+  if (window.requestAnimationFrame) {
+    window.requestAnimationFrame(refresh);
+  }
+  window.setTimeout(refresh, 0);
+  window.setTimeout(refresh, 80);
 }
 
 function renderCoreVocabulary(question) {
@@ -1744,10 +2168,88 @@ function exportVocabPdf(title, entries, filenamePrefix) {
   printWindow.document.close();
 }
 
+function exportWfdPdfFromOverview() {
+  const questions = Array.isArray(window.PTE_WFD_DATA?.questions) ? window.PTE_WFD_DATA.questions : [];
+  if (!questions.length) {
+    showToast("当前没有可导出的 WFD 题目。");
+    return;
+  }
+
+  const exportedAt = new Date();
+  const rows = questions
+    .map((question, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>WFD #${escapeHtml(String(question.question_id || index + 1).padStart(3, "0"))}</td>
+        <td class="answer">${escapeHtml(question.answer || "")}</td>
+      </tr>
+    `)
+    .join("");
+  const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>WFD听写题库</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #172033;
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    .meta { margin: 0 0 16px; color: #63708b; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      border: 1px solid #dbe3ef;
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #eef4ff; color: #172033; font-weight: 700; }
+    td:first-child { width: 42px; text-align: center; color: #63708b; }
+    td:nth-child(2) { width: 92px; font-weight: 700; white-space: nowrap; }
+    .answer { color: #172033; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>WFD听写题库</h1>
+  <p class="meta">共 ${questions.length} 题 · 导出时间：${escapeHtml(exportedAt.toLocaleString())}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>题号</th>
+        <th>英文句子</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <script>
+    document.title = "wfd-list-${new Date().toISOString().slice(0, 10)}";
+    window.addEventListener("load", () => setTimeout(() => window.print(), 200));
+  <\/script>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    showToast("浏览器阻止了弹窗，请允许弹窗后再导出PDF。");
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
 function handlePassageWordClick(event) {
-  const wordNode = event.target.closest(".lookup-word");
+  const wordNode = getLookupWordFromEvent(event);
   const question = getCurrentQuestion();
-  if (!wordNode || !question || !state.currentAttemptSubmitted || question.id !== state.currentId) return;
+  const lookupReady = state.currentAttemptSubmitted || els["passage"]?.classList.contains("lookup-enabled");
+  if (!wordNode || !els["passage"]?.contains(wordNode) || !question || !lookupReady || question.id !== state.currentId) return;
   event.stopPropagation();
   if (state.teacherMode) {
     event.preventDefault();
@@ -1755,6 +2257,31 @@ function handlePassageWordClick(event) {
     return;
   }
   showWordCard(wordNode.dataset.word, wordNode.textContent, wordNode, wordNode.dataset.coreWord || "");
+}
+
+function handlePassageWordPointerDown(event) {
+  if (event.button !== 0 && event.pointerType !== "touch") return;
+  const wordNode = getLookupWordFromEvent(event);
+  const question = getCurrentQuestion();
+  const lookupReady = state.currentAttemptSubmitted || els["passage"]?.classList.contains("lookup-enabled");
+  if (!wordNode || !els["passage"]?.contains(wordNode) || !question || !lookupReady || question.id !== state.currentId) return;
+  event.stopPropagation();
+  if (state.teacherMode) return;
+  showWordCard(wordNode.dataset.word, wordNode.textContent, wordNode, wordNode.dataset.coreWord || "");
+}
+
+function handleGlobalLookupInteraction(event) {
+  const wordNode = getLookupWordFromEvent(event);
+  if (!wordNode || !els["passage"]?.contains(wordNode)) return;
+  handlePassageWordClick(event);
+}
+
+function getLookupWordFromEvent(event) {
+  const direct = event.target?.closest?.(".lookup-word");
+  if (direct) return direct;
+  if (typeof event.clientX !== "number" || typeof event.clientY !== "number") return null;
+  const elements = document.elementsFromPoint?.(event.clientX, event.clientY) || [];
+  return elements.find((element) => element?.classList?.contains("lookup-word")) || null;
 }
 
 function handlePassageWordContextMenu(event) {
@@ -1765,6 +2292,8 @@ function handlePassageWordContextMenu(event) {
 
 function showWordCard(wordKey, displayWord, anchor, coreWordKey = "") {
   const entry = coreWordKey ? findCoreWordEntry(coreWordKey) : findWordEntry(wordKey);
+  const wordbookWord = normalizeLookupWord(entry?.word || inferLookupLemma(wordKey) || displayWord);
+  const isSaved = state.wordbook.has(wordbookWord);
   const phonetic = entry?.phonetic || entry?.ukphone || entry?.usphone || "暂无本地音标";
   const meaning = cleanMeaning(entry?.meaning) || "本地词库暂无释义，可后续补充更完整词库。";
   const rect = anchor.getBoundingClientRect();
@@ -1775,7 +2304,10 @@ function showWordCard(wordKey, displayWord, anchor, coreWordKey = "") {
         <strong>${escapeHtml(displayWord)}</strong>
         <span>${escapeHtml(phonetic)}</span>
       </div>
-      <button class="word-card__close" type="button" aria-label="关闭">×</button>
+      <div class="word-card__actions">
+        <button class="word-card__add" type="button" ${isSaved ? "disabled" : ""} aria-label="${isSaved ? "saved" : "add to wordbook"}" title="${isSaved ? "saved" : "add to wordbook"}">${isSaved ? "OK" : "+"}</button>
+        <button class="word-card__close" type="button" aria-label="关闭">×</button>
+      </div>
     </div>
     <p><b>中文注释：</b>${escapeHtml(meaning)}</p>
     <button class="word-card__sound" type="button">播放发音</button>
@@ -1785,9 +2317,40 @@ function showWordCard(wordKey, displayWord, anchor, coreWordKey = "") {
   els["word-card"].classList.remove("hidden");
   els["word-card"].querySelector(".word-card__close").addEventListener("click", hideWordCard);
   els["word-card"].querySelector(".word-card__sound").addEventListener("click", () => speakWord(displayWord));
+  els["word-card"].querySelector(".word-card__add")?.addEventListener("click", () => {
+    addLookupWordToWordbook(wordbookWord, displayWord);
+  });
+}
+
+function addLookupWordToWordbook(word, displayWord = word) {
+  const key = normalizeLookupWord(word);
+  if (!key) return;
+  const existed = state.wordbook.has(key);
+  const shouldRefreshCorePanel = !els["core-vocab-panel"]?.classList.contains("hidden");
+  const shouldRefreshOptionPanel = !els["option-vocab-panel"]?.classList.contains("hidden");
+  state.wordbook.add(key);
+  saveWordbook();
+  renderWordbook();
+  renderOverview();
+  if (shouldRefreshCorePanel) renderCoreVocabulary(getCurrentQuestion());
+  if (shouldRefreshOptionPanel) renderOptionVocabulary(getCurrentQuestion());
+  const button = els["word-card"]?.querySelector(".word-card__add");
+  if (button) {
+    button.textContent = "OK";
+    button.disabled = true;
+    button.setAttribute("aria-label", "saved");
+    button.setAttribute("title", "saved");
+  }
+  showToast(existed ? `已在我的单词库：${key}` : `已加入我的单词库：${displayWord}`);
 }
 
 function findWordEntry(wordKey) {
+  const key = normalizeLookupWord(wordKey);
+  const exactEntries = [state.coreWordIndex.get(key), state.wordIndex.get(key)].filter(Boolean);
+  const exactEntry = exactEntries.find((entry) => /[\u4e00-\u9fff]/.test(cleanMeaning(entry.meaning || "")))
+    || exactEntries.find((entry) => cleanMeaning(entry.meaning || "").trim());
+  if (exactEntry) return exactEntry;
+
   const entries = getLookupCandidates(wordKey)
     .map((candidate) => state.coreWordIndex.get(candidate) || state.wordIndex.get(candidate))
     .filter(Boolean);
@@ -1823,13 +2386,13 @@ function getLookupCandidates(wordKey) {
   if (key.endsWith("s") && key.length > 3) candidates.push(key.slice(0, -1));
   if (key.endsWith("ing") && key.length > 5) {
     const stem = key.slice(0, -3);
-    candidates.push(stem, `${stem}e`);
+    candidates.push(`${stem}e`, stem);
     if (stem.length > 2 && stem.at(-1) === stem.at(-2)) candidates.push(stem.slice(0, -1));
   }
   if (key.endsWith("ed") && key.length > 4) {
     const stem = key.slice(0, -2);
-    candidates.push(stem, `${stem}e`);
     if (key.endsWith("ied") && key.length > 5) candidates.push(`${key.slice(0, -3)}y`);
+    candidates.push(`${stem}e`, stem);
     if (stem.length > 2 && stem.at(-1) === stem.at(-2)) candidates.push(stem.slice(0, -1));
   }
   return Array.from(new Set(candidates.filter(Boolean)));
@@ -2001,6 +2564,7 @@ function renderResult(record) {
 
   els["result-panel"].innerHTML = `
     <h2>本题结果：${record.correct}/${record.total} (${percentage}%)</h2>
+    <p class="result-time">答题时间：${escapeHtml(record.elapsedText || formatElapsedTime(record.elapsedMs || 0))}</p>
     <div class="result-list">
       ${record.details
         .map(
@@ -2029,6 +2593,23 @@ function hideAnalysisPanel() {
   els["analysis-panel"].classList.add("hidden");
   els["toggle-analysis"].className = "secondary-button";
   els["toggle-analysis"].textContent = "查看解析与翻译";
+}
+
+function showCurrentQuestionHistoryPanel() {
+  renderCurrentQuestionHistory(getCurrentQuestion());
+  els["current-history-panel"]?.classList.remove("hidden");
+  if (els["toggle-current-history"]) {
+    els["toggle-current-history"].className = "primary-button active";
+    els["toggle-current-history"].textContent = "收起练习记录";
+  }
+}
+
+function hideCurrentQuestionHistoryPanel() {
+  els["current-history-panel"]?.classList.add("hidden");
+  if (els["toggle-current-history"]) {
+    els["toggle-current-history"].className = "secondary-button";
+    els["toggle-current-history"].textContent = "练习记录";
+  }
 }
 
 function renderWeaknessList() {
@@ -2064,9 +2645,231 @@ function setSidebarWeaknessHtml(html) {
 function renderReviewOverview() {
   setText("review-fibrw-summary", getReviewTypeSummary("FIB_RW"));
   setText("review-fibr-summary", getReviewTypeSummary("FIB_R"));
+  setText("review-wfd-summary", getReviewTypeSummary("WFD"));
+}
+
+function renderCurrentQuestionHistory(question = getCurrentQuestion()) {
+  const target = els["current-history-list"];
+  if (!target) return;
+  if (!question) {
+    target.innerHTML = '<div class="current-history-empty">提交答案后，这里会显示本题的答题历史。</div>';
+    return;
+  }
+  const records = state.records
+    .filter((record) => record.questionId === question.id)
+    .slice()
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+  if (!records.length) {
+    target.innerHTML = '<div class="current-history-empty">提交答案后，这里会显示本题的答题历史。</div>';
+    return;
+  }
+
+  target.innerHTML = records.map(renderCurrentQuestionHistoryItem).join("");
+  target.querySelectorAll("[data-current-history-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const record = state.records.find((item) => item.id === button.dataset.currentHistoryId);
+      if (record) replayRecordOnCurrentQuestion(record);
+    });
+  });
+}
+
+function renderCurrentQuestionHistoryItem(record) {
+  const details = Array.isArray(record.details) ? record.details : [];
+  const answerText = details
+    .map((item) => item.userAnswer || "____")
+    .join(" , ");
+  const scoreText = `${record.correct}/${record.total}`;
+  return `
+    <article class="current-history-item">
+      <div class="current-history-body">
+        <div class="current-history-head">
+          <span>${escapeHtml(formatRecordShortDate(record.createdAt))}</span>
+        </div>
+        <p class="current-history-answer">${escapeHtml(answerText || "____")}</p>
+        <button class="current-history-score" type="button" data-current-history-id="${escapeHtml(record.id)}">
+          查看评分 <span>${escapeHtml(scoreText)}分</span>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function formatRecordShortDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function renderHistoryPage() {
+  updateHistoryFilterTabs();
+  const records = getHistoryRecords();
+  const totalPages = Math.max(1, Math.ceil(records.length / REVIEW_DETAIL_PAGE_SIZE));
+  state.historyPage = Math.min(Math.max(1, state.historyPage), totalPages);
+  const start = (state.historyPage - 1) * REVIEW_DETAIL_PAGE_SIZE;
+  const pageRecords = records.slice(start, start + REVIEW_DETAIL_PAGE_SIZE);
+  const allCorrect = records.reduce((sum, record) => sum + Number(record.correct || 0), 0);
+  const allTotal = records.reduce((sum, record) => sum + Number(record.total || 0), 0);
+  const accuracy = allTotal ? Math.round((allCorrect / allTotal) * 100) : 0;
+  const typeText = state.historyTypeFilter
+    ? state.historyTypeFilter === "FIB_R" ? "FIB-R" : "FIB-RW"
+    : "全部题型";
+
+  setText(
+    "history-summary",
+    records.length
+      ? `${typeText} · ${records.length} 次提交 · 平均正确率 ${accuracy}%`
+      : `${typeText} · 还没有答题历史，提交答案后会自动记录在这里。`,
+  );
+  updateHistoryPager(totalPages, records.length);
+
+  if (!els["history-list"]) return;
+  if (!pageRecords.length) {
+    els["history-list"].innerHTML = '<div class="empty-state">还没有答题历史，先去提交一题吧。</div>';
+    return;
+  }
+
+  els["history-list"].innerHTML = pageRecords.map(renderHistoryRecordCard).join("");
+  els["history-list"].querySelectorAll("[data-history-record-id]").forEach((button) => {
+    button.addEventListener("click", () => openQuestionFromHistory(button.dataset.historyRecordId));
+  });
+}
+
+function getHistoryRecords() {
+  return state.records
+    .filter((record) => !state.historyTypeFilter || record.type === state.historyTypeFilter)
+    .slice()
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+
+function renderHistoryRecordCard(record) {
+  const rate = record.total ? Math.round((record.correct / record.total) * 100) : 0;
+  const details = Array.isArray(record.details) ? record.details : [];
+  const wrongCount = details.filter((item) => !item.isCorrect).length;
+  const answerPreview = details
+    .map((item) => {
+      const userAnswer = item.userAnswer || "未作答";
+      return `<span class="history-answer-chip ${item.isCorrect ? "correct" : "incorrect"}">${escapeHtml(userAnswer)}</span>`;
+    })
+    .join("");
+  const detailRows = details
+    .map((item) => `
+      <div class="history-detail-row ${item.isCorrect ? "correct" : "incorrect"}">
+        <span>第 ${escapeHtml(item.blank_index)} 空</span>
+        <span>你的答案：${escapeHtml(item.userAnswer || "未作答")}</span>
+        <span>正确答案：${escapeHtml(item.answer || "")}</span>
+      </div>
+    `)
+    .join("");
+
+  return `
+    <article class="history-card">
+      <button class="history-card-main" type="button" data-history-record-id="${escapeHtml(record.id)}">
+        <span class="history-date">${escapeHtml(formatRecordDate(record.createdAt))}</span>
+        <span class="history-score ${rate >= 80 ? "good" : "bad"}">${escapeHtml(record.correct)}/${escapeHtml(record.total)}</span>
+        <strong>${escapeHtml(record.questionNumber)}. ${escapeHtml(record.title)}</strong>
+        <span class="history-meta">${escapeHtml(record.frequency)} · ${escapeHtml(record.type)} · 用时 ${escapeHtml(record.elapsedText || formatElapsedTime(record.elapsedMs || 0))} · 错 ${wrongCount} 空</span>
+        <span class="history-answer-preview">${answerPreview || "无作答明细"}</span>
+      </button>
+      <div class="history-detail-list">${detailRows}</div>
+    </article>
+  `;
+}
+
+function updateHistoryFilterTabs() {
+  ["history-filter-all", "history-filter-fibrw", "history-filter-fibr"].forEach((id) => {
+    els[id]?.classList.toggle("active", (els[id]?.dataset.historyType || "") === state.historyTypeFilter);
+  });
+}
+
+function updateHistoryPager(totalPages, totalRows) {
+  if (els["history-page-info"]) {
+    els["history-page-info"].textContent = `第 ${state.historyPage} / ${totalPages} 页 · 共 ${totalRows} 次`;
+  }
+  if (els["history-prev-page"]) {
+    els["history-prev-page"].disabled = state.historyPage <= 1;
+  }
+  if (els["history-next-page"]) {
+    els["history-next-page"].disabled = state.historyPage >= totalPages;
+  }
+}
+
+function formatRecordDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year} / ${month} / ${day} ${hours}:${minutes}`;
+}
+
+function openQuestionFromHistory(recordId) {
+  const record = state.records.find((item) => item.id === recordId);
+  if (!record) return;
+  const question = state.questions.find((item) => item.id === record.questionId);
+  if (!question) {
+    showToast("这条历史记录对应的题目已经不在当前题库里。");
+    return;
+  }
+  clearPracticeLabelFilter();
+  state.typeFilter = question.type;
+  state.frequencyFilter = null;
+  state.favoriteFilter = "all";
+  state.questionStatusFilter = "all";
+  state.currentId = question.id;
+  if (els["search-input"]) {
+    els["search-input"].value = "";
+  }
+  moveQuestionIntoCurrentPage(question.id);
+  showPractice();
+  renderAll();
+  replayRecordOnCurrentQuestion(record);
+}
+
+function replayRecordOnCurrentQuestion(record) {
+  if (!record || !els["passage"]) return;
+  stopQuestionTimer(false);
+  clearInlineAnswerFeedback();
+  const details = Array.isArray(record.details) ? record.details : [];
+  const selects = Array.from(els["passage"].querySelectorAll(".blank-select"));
+  const dragBlanks = Array.from(els["passage"].querySelectorAll(".drag-blank"));
+  details.forEach((item) => {
+    const select = selects.find((control) => Number(control.dataset.blankIndex) === Number(item.blank_index));
+    const dragBlank = dragBlanks.find((control) => Number(control.dataset.blankIndex) === Number(item.blank_index));
+    if (select) {
+      select.value = item.userAnswer || "";
+      select.classList.toggle("correct", Boolean(item.isCorrect));
+      select.classList.toggle("incorrect", !item.isCorrect);
+      showInlineAnswerFeedback(select, item, Boolean(item.isCorrect));
+    }
+    if (dragBlank) {
+      dragBlank.dataset.value = item.userAnswer || "";
+      dragBlank.textContent = item.userAnswer || "";
+      dragBlank.classList.toggle("filled", Boolean(item.userAnswer));
+      dragBlank.classList.toggle("correct", Boolean(item.isCorrect));
+      dragBlank.classList.toggle("incorrect", !item.isCorrect);
+      showInlineAnswerFeedback(dragBlank, item, Boolean(item.isCorrect));
+    }
+  });
+  state.currentAttemptSubmitted = true;
+  preparePassageLookup(getCurrentQuestion());
+  renderResult(record);
+  showAnalysisPanel();
+  renderCoreVocabulary(getCurrentQuestion());
+  renderOptionVocabulary(getCurrentQuestion());
 }
 
 function getReviewTypeSummary(type) {
+  if (type === "WFD") {
+    const records = getWfdReviewRecords();
+    const wrong = records.filter((record) => Number(record.score || 0) < 100).length;
+    return `${records.length} 次记录 · 错 ${wrong} 题`;
+  }
   const records = state.records.filter((record) => record.type === type);
   const wrong = records.reduce((total, record) => total + record.details.filter((item) => !item.isCorrect).length, 0);
   return `${records.length} 次记录 · 错 ${wrong} 空`;
@@ -2074,11 +2877,16 @@ function getReviewTypeSummary(type) {
 
 function renderReviewTypePage() {
   const type = state.reviewTypeFilter || "FIB_RW";
-  const typeName = type === "FIB_R" ? "FIB-R 拖拽" : "FIB-RW 下拉";
+  const typeName = getReviewTypeName(type);
   setText("review-type-title", `${typeName} · 做题复盘`);
   setText("review-type-summary", "按题型查看正确率分档，同时保留薄弱考点统计，针对性提升。");
   updateReviewAccuracyTabs();
   renderReviewAccuracyQuestionList(type);
+  if (type === "WFD") {
+    setReviewWeaknessPanelVisible(false);
+    return;
+  }
+  setReviewWeaknessPanelVisible(true);
   const stats = getLabelStats(type);
   const rows = Object.entries(stats)
     .sort((a, b) => b[1].wrong - a[1].wrong || a[0].localeCompare(b[0], "zh-CN"))
@@ -2152,6 +2960,9 @@ function setReviewAccuracyPagerVisible(visible) {
 }
 
 function getReviewAccuracyQuestionRows(type) {
+  if (type === "WFD") {
+    return getWfdReviewAccuracyQuestionRows();
+  }
   const latestByQuestion = new Map();
   state.records.forEach((record) => {
     if (record.type !== type) return;
@@ -2181,6 +2992,46 @@ function getReviewAccuracyQuestionRows(type) {
     .sort((a, b) => a.rate - b.rate || Number(a.question_id) - Number(b.question_id));
 }
 
+function getWfdReviewAccuracyQuestionRows() {
+  const questions = Array.isArray(window.PTE_WFD_DATA?.questions) ? window.PTE_WFD_DATA.questions : [];
+  const questionMap = new Map(questions.map((question) => [question.id, question]));
+  return getWfdReviewRecords()
+    .map((record) => {
+      const question = questionMap.get(record.id);
+      if (!question) return null;
+      const rate = Math.round(Number(record.score || 0));
+      return {
+        id: question.id,
+        question_id: `WFD #${String(question.question_id || "").padStart(3, "0")}`,
+        title: question.answer || question.title || "Write From Dictation",
+        frequency: question.frequency || "高频",
+        type: "WFD",
+        rate,
+        meta: `最近 ${rate}% · ${formatRecordShortDate(record.answeredAt)}`,
+      };
+    })
+    .filter(Boolean)
+    .filter((item) => matchesReviewAccuracyBucket(item.rate))
+    .sort((a, b) => a.rate - b.rate || String(a.question_id).localeCompare(String(b.question_id), "zh-CN"));
+}
+
+function getWfdReviewRecords() {
+  try {
+    const records = JSON.parse(localStorage.getItem(WFD_RECORDS_KEY) || "{}");
+    return Object.entries(records || {})
+      .map(([id, record]) => ({ id, ...(record && typeof record === "object" ? record : {}) }))
+      .sort((a, b) => String(b.answeredAt || "").localeCompare(String(a.answeredAt || "")));
+  } catch (error) {
+    return [];
+  }
+}
+
+function getReviewTypeName(type) {
+  if (type === "WFD") return "WFD 听写";
+  if (type === "FIB_R") return "FIB-R 拖拽";
+  return "FIB-RW 下拉";
+}
+
 function matchesReviewAccuracyBucket(rate) {
   if (state.reviewAccuracyFilter === "low") return rate < 40;
   if (state.reviewAccuracyFilter === "mid") return rate >= 40 && rate < 80;
@@ -2208,6 +3059,13 @@ function updateReviewAccuracyTabs() {
 function setReviewWeaknessHtml(html) {
   if (els["review-weakness-list"]) {
     els["review-weakness-list"].innerHTML = html;
+  }
+}
+
+function setReviewWeaknessPanelVisible(visible) {
+  const panel = els["review-weakness-list"]?.closest(".panel");
+  if (panel) {
+    panel.classList.toggle("hidden", !visible);
   }
 }
 
@@ -2347,6 +3205,10 @@ function updateReviewListPager(pager, page, totalPages, totalRows) {
 }
 
 function openQuestionFromReview(questionId, questionIds = [], sourceListId = "") {
+  if (state.reviewTypeFilter === "WFD" || String(questionId || "").startsWith("wfd-")) {
+    window.location.href = `wfd.html?questionId=${encodeURIComponent(questionId)}`;
+    return;
+  }
   const question = state.questions.find((item) => item.id === questionId);
   if (!question) return;
   const isRelatedList = sourceListId === "review-related-question-list";

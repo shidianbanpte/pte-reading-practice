@@ -6,7 +6,7 @@ const VOCAB_STORAGE_KEY = "pte_reading_practice_vocab_bank_v1";
 const CUSTOM_CORE_STORAGE_KEY = "pte_reading_practice_teacher_pte_core_v1";
 const VOCAB_REVIEW_STORAGE_KEY = "pte_reading_practice_vocab_review_v1";
 const ACCESS_STORAGE_KEY = "pte_reading_practice_access_v1";
-const ACCESS_GATE_ENABLED = false;
+const ACCESS_GATE_ENABLED = true;
 const TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 const ACCESS_UNLOCK_CODES = ["PTE2026"];
 const QUESTION_PAGE_SIZE = 12;
@@ -2182,6 +2182,7 @@ function exportWfdPdfFromOverview() {
         <td>${index + 1}</td>
         <td>WFD #${escapeHtml(String(question.question_id || index + 1).padStart(3, "0"))}</td>
         <td class="answer">${escapeHtml(question.answer || "")}</td>
+        <td class="translation">${escapeHtml(question.translation || "")}</td>
       </tr>
     `)
     .join("");
@@ -2213,6 +2214,7 @@ function exportWfdPdfFromOverview() {
     td:first-child { width: 42px; text-align: center; color: #63708b; }
     td:nth-child(2) { width: 92px; font-weight: 700; white-space: nowrap; }
     .answer { color: #172033; font-weight: 600; }
+    .translation { color: #0f766e; }
   </style>
 </head>
 <body>
@@ -2224,6 +2226,7 @@ function exportWfdPdfFromOverview() {
         <th>序号</th>
         <th>题号</th>
         <th>英文句子</th>
+        <th>中文翻译</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>

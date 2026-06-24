@@ -159,6 +159,9 @@ function renderCurrentWfd() {
   wfdEls["wfd-result"].innerHTML = "";
   wfdEls["wfd-answer"].classList.remove("hidden", "revealed");
   updateWfdAnswerToggleButton();
+  const translationHtml = question.translation
+    ? `<div class="wfd-answer-translation"><strong>中文翻译：</strong>${escapeWfdHtml(question.translation)}</div>`
+    : "";
   wfdEls["wfd-answer"].innerHTML = `
     <div class="wfd-answer-locked">
       <div class="wfd-lock-icon" aria-hidden="true">▣</div>
@@ -166,6 +169,7 @@ function renderCurrentWfd() {
       <p>完成听写后，可点击「显示答案」查看原文</p>
     </div>
     <div class="wfd-answer-text"><strong>答案：</strong>${renderWfdLookupSentence(question.answer)}</div>
+    ${translationHtml}
   `;
 }
 
@@ -480,6 +484,7 @@ function exportWfdPdf() {
         <td>${index + 1}</td>
         <td>WFD #${escapeWfdHtml(String(question.question_id).padStart(3, "0"))}</td>
         <td class="answer">${escapeWfdHtml(question.answer)}</td>
+        <td class="translation">${escapeWfdHtml(question.translation || "")}</td>
         <td>${escapeWfdHtml(scoreText)}</td>
         <td>${escapeWfdHtml(answeredAt)}</td>
       </tr>
@@ -522,9 +527,11 @@ function exportWfdPdf() {
     th { background: #eef4ff; color: #172033; font-weight: 700; }
     td:first-child { width: 42px; text-align: center; color: #63708b; }
     td:nth-child(2) { width: 92px; font-weight: 700; white-space: nowrap; }
-    td:nth-child(4) { width: 70px; white-space: nowrap; }
-    td:nth-child(5) { width: 130px; color: #63708b; }
+    td:nth-child(4) { color: #0f766e; }
+    td:nth-child(5) { width: 70px; white-space: nowrap; }
+    td:nth-child(6) { width: 130px; color: #63708b; }
     .answer { color: #172033; font-weight: 600; }
+    .translation { color: #0f766e; }
   </style>
 </head>
 <body>
@@ -536,6 +543,7 @@ function exportWfdPdf() {
         <th>序号</th>
         <th>题号</th>
         <th>英文句子</th>
+        <th>中文翻译</th>
         <th>状态</th>
         <th>提交时间</th>
       </tr>

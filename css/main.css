@@ -584,11 +584,23 @@ body.wfd-page .wfd-progress-track {
   font-size: 18px;
 }
 
+.wfd-answer-translation {
+  display: none;
+  margin-top: 14px;
+  border-top: 1px solid #cfeedd;
+  padding: 14px 2px 2px;
+  color: #0f766e;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
 .wfd-answer.revealed .wfd-answer-locked {
   display: none;
 }
 
-.wfd-answer.revealed .wfd-answer-text {
+.wfd-answer.revealed .wfd-answer-text,
+.wfd-answer.revealed .wfd-answer-translation {
   display: block;
 }
 

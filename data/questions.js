@@ -1,7 +1,7 @@
-window.QUESTIONS_DATA = {
+window.PTE_QUESTIONS_DATA = {
   "meta": {
     "source": "FIB_R June lower Word/Excel update plus existing FIB_RW",
-    "updated_at": "2026-06-21T23:12:53",
+    "updated_at": "2026-06-29T22:44:01",
     "question_count": 393,
     "blank_count": 1728,
     "by_type": {
@@ -11470,13 +11470,13 @@ window.QUESTIONS_DATA = {
       "type": "FIB_RW",
       "frequency": "高频",
       "passage_html": "<p>A drop in the incidence of lightning strikes could impact <select class=\"blank-select\" data-blank-index=\"1\"><option value=\"\">选择答案</option><option value=\"for\">for</option><option value=\"about\">about</option><option value=\"on\">on</option><option value=\"to\">to</option></select> the frequency of wildfires, especially in tropical regions. It could also lower the incidence of lightning strikes to infrastructure and affect how greenhouse gases in the atmosphere contribute to climate change. Scientists from the Universities of Edinburgh and Leeds and Lancaster University used a newly devised method to calculate the likely incidence of lightning flashes from storm clouds. <select class=\"blank-select\" data-blank-index=\"2\"><option value=\"\">选择答案</option><option value=\"Unlike\">Unlike</option><option value=\"Unless\">Unless</option><option value=\"Except\">Except</option><option value=\"Besides\">Besides</option></select> traditional calculations of lightning flashes at the global scale, which are based on the height of clouds, their approach takes into account the movement of tiny ice particles that form and move within clouds. Electrical charges build <select class=\"blank-select\" data-blank-index=\"3\"><option value=\"\">选择答案</option><option value=\"upon\">upon</option><option value=\"up\">up</option><option value=\"above\">above</option><option value=\"off\">off</option></select> in these ice particles, and in cold water droplets and soft hail formed inside clouds. These <select class=\"blank-select\" data-blank-index=\"4\"><option value=\"\">选择答案</option><option value=\"discharge\">discharge</option><option value=\"have discharged\">have discharged</option><option value=\"are discharging\">are discharging</option><option value=\"are discharged\">are discharged</option></select> during storms, giving rise to lightning flashes and thunder.</p>",
-      "analysis_html": "<p>1、impact on</p>\n<p>考点:固定搭配</p>\n<p>解析: 空格位于动词 impact 后面,后接宾语 the frequency of wildfires。在英语习惯用法中,当 impact 用作不及物动词表达&quot;对......产生影响/冲击&quot;时,后面必须加上固定的介词搭配 on(即 impact on sth)。</p>\n<p>2、Unlike</p>\n<p>考点:逻辑衔接</p>\n<p>解析: 空格位于句首,用来连接和对比两种不同的计算方法。前半句是传统的全球尺度闪电计算法(基于云层高度),后半句是&quot;他们的创新方法&quot;(考虑了云层内部微小冰粒的运动)。由于前后两者的核心计算依据完全不同,构成了鲜明的对立和反差,因此选用介词 Unlike(与......不同) 满足对比的逻辑衔接。</p>\n<p>3、build up</p>\n<p>考点:固定搭配</p>\n<p>解析: 空格位于 &quot;Electrical charges build ______ in these ice particles&quot; 结构中。本句在解释雷电形成的物理过程:电荷在这些冰晶颗粒中不断&quot;积聚/聚集&quot;。在英语中,表达压力、力量、电荷等&quot;逐渐积聚/与日俱增&quot;,习惯使用的是固定短语搭配 &quot;build up&quot;。</p>\n<p>4、are discharged</p>\n<p>考点:时态语态</p>\n<p>解析: 空格作本句的谓语动词,主语是前面的 These(指代上文的 electrical charges 电荷)。电荷本身不能主动发出&quot;释放&quot;的动作,它与动词 discharge(释放/放电)之间是纯粹的被动关系(电荷在暴风雨中被释放出来,从而产生雷电)。文章整体在陈述客观的科学原理,使用一般现在时,故选用一般现在时的被动语态 are discharged(被释放)。</p>",
+      "analysis_html": "<p>1. on</p>\n<p>考点:固定搭配</p>\n<p>解析: 空格位于动词 impact 后面,后接宾语 the frequency of wildfires。在英语习惯用法中,当 impact 用作不及物动词表达&quot;对......产生影响/冲击&quot;时,后面必须加上固定的介词搭配 on(即 impact on sth)。</p>\n<p>2、Unlike</p>\n<p>考点:逻辑衔接</p>\n<p>解析: 空格位于句首,用来连接和对比两种不同的计算方法。前半句是传统的全球尺度闪电计算法(基于云层高度),后半句是&quot;他们的创新方法&quot;(考虑了云层内部微小冰粒的运动)。由于前后两者的核心计算依据完全不同,构成了鲜明的对立和反差,因此选用介词 Unlike(与......不同) 满足对比的逻辑衔接。</p>\n<p>3、build up</p>\n<p>考点:固定搭配</p>\n<p>解析: 空格位于 &quot;Electrical charges build ______ in these ice particles&quot; 结构中。本句在解释雷电形成的物理过程:电荷在这些冰晶颗粒中不断&quot;积聚/聚集&quot;。在英语中,表达压力、力量、电荷等&quot;逐渐积聚/与日俱增&quot;,习惯使用的是固定短语搭配 &quot;build up&quot;。</p>\n<p>4、are discharged</p>\n<p>考点:时态语态</p>\n<p>解析: 空格作本句的谓语动词,主语是前面的 These(指代上文的 electrical charges 电荷)。电荷本身不能主动发出&quot;释放&quot;的动作,它与动词 discharge(释放/放电)之间是纯粹的被动关系(电荷在暴风雨中被释放出来,从而产生雷电)。文章整体在陈述客观的科学原理,使用一般现在时,故选用一般现在时的被动语态 are discharged(被释放)。</p>",
       "translation_html": "<p>A drop in the incidence of lightning strikes could impact on the frequency of wildfires, especially in tropical regions.</p>\n<p>雷击发生率的下降可能会对野火发生的频率产生影响，尤其是在热带地区。</p>\n<p>It could also lower the incidence of lightning strikes to infrastructure and affect how greenhouse gases in the atmosphere contribute to climate change.</p>\n<p>它还可能会降低基础设施遭受雷击的概率，并影响大气中的温室气体对气候变化的作用方式。</p>\n<p>Scientists from the Universities of Edinburgh and Leeds and Lancaster University used a newly devised method to calculate the likely incidence of lightning flashes from storm clouds.</p>\n<p>来自爱丁堡大学、利兹大学和兰卡斯特大学的科学家们使用了一种新设计的方法来计算风暴云产生闪电的可能发生率。</p>\n<p>Unlike traditional calculations of lightning flashes at the global scale, which are based on the height of clouds, their approach takes into account the movement of tiny ice particles that form and move within clouds.</p>\n<p>与基于云层高度的传统全球闪电发生率计算方法不同，他们的方法考虑了在云层内形成并移动的微小冰粒的运动。</p>\n<p>Electrical charges build up in these ice particles, and in cold water droplets and soft hail formed inside clouds.</p>\n<p>电荷在这些冰粒以及云层内部形成的冷水滴和软雹中积聚。</p>\n<p>These are discharged during storms, giving rise to lightning flashes and thunder.</p>\n<p>这些电荷在风暴期间被释放，从而产生闪电和雷声。</p>",
       "blanks": [
         {
           "blank_index": 1,
           "label": "固定搭配",
-          "answer": "impact on",
+          "answer": "on",
           "options": [
             "for",
             "about",
@@ -20936,28 +20936,12 @@ window.QUESTIONS_DATA = {
         "produce",
         "played"
       ],
-      "analysis_html": "<p>答案解析</p>\n<p>1. is</p>\n<p>考点： 语法结构</p>\n<p>解析： 空格位于“The lute is a plucked string instrument that ______ a central role”。此处为定语从句，主语 that 指代 instrument（单数），描述事实应用一般现在时。play a central role 是固定搭配，play 应用第三人称单数 plays，但选项中没有 plays，而 is 可以理解为“it is a central role”的逻辑不成立。然而题目给出的答案为 is——这意味着“play a role”本身是固定搭配，而在此处“that is a central role”虽看似不自然，但结合题目答案应为 is，表示“鲁特琴在音乐中扮演中心角色”——实际上应填 plays，但既然指定答案为 is，则按题处理。因此填 is。</p>\n<p>2. made</p>\n<p>考点： 语法结构</p>\n<p>解析： 空格位于“fretted neck ______ it a versatile instrument”。此处需要谓语动词，主语 neck 为单数。made it a versatile instrument 意为“使其成为一种多功能的乐器”，made 为 make 的过去式，表示其结构特征使它具备了多功能性。其他选项中，has it a... 为疑问语序，不符合陈述句；changed it a... 搭配不当。因此填 made。</p>\n<p>3. produce</p>\n<p>考点： 单句理解</p>\n<p>解析： 空格位于“paired strings, which ______ a richer and more resonant sound”。produce 意为“产生/发出”，指琴弦产生更丰富、更具共鸣的声音。定语从句主语 which 指代 strings（复数），一般现在时用 produce。record 意为“录制”，与“声音的产生”无关。因此填 produce。</p>\n<p>4. became</p>\n<p>考点： 单句理解</p>\n<p>解析： 空格位于“as keyboard instruments ______ more fashionable”。became 意为“变得”，表示键盘乐器变得更流行。句意是“18世纪，随着键盘乐器变得更流行，鲁特琴的受欢迎程度逐渐下降”。changed 意为“改变”，不能直接接 more fashionable（需加 to）；has 与 more fashionable 不搭配。因此填 became。</p>\n<p>5. is</p>\n<p>考点： 语法结构</p>\n<p>解析： 空格位于“and today it ______ still frequently featured”。此处需要谓语动词，主语 it 为单数，描述当前状况应用一般现在时。is featured 为被动语态，意为“被呈现/被作为特色”。句意是“如今它仍然经常出现在历史知情音乐会中”。has featured 为主动语态，意为“以……为特色”，但主语 it 与 featured 之间应为被动关系（it is featured）。因此填 is。</p>",
-      "translation_html": "<p>The lute is a plucked string instrument that is a central role in European music from the late Middle Ages to the Baroque period.</p>\n<p>鲁特琴是一种拨弦乐器，从中世纪晚期到巴洛克时期在欧洲音乐中扮演着核心角色。</p>\n<p>Its pear-shaped body and fretted neck made it a versatile instrument, suitable both for solo performance and for ensemble playing.</p>\n<p>其梨形琴身和带品琴颈使其成为一种多功能的乐器，既适合独奏也适合合奏。</p>\n<p>Unlike the modern guitar, the lute usually has courses of paired strings, which produce a richer and more resonant sound.</p>\n<p>与现代吉他不同，鲁特琴通常有多组双弦，产生更丰富、更具共鸣的声音。</p>\n<p>During the Renaissance, it was highly valued by both professional musicians and amateur players.</p>\n<p>在文艺复兴时期，它受到专业音乐家和业余演奏者的高度重视。</p>\n<p>In the 18th century, however, its popularity gradually declined as keyboard instruments became more fashionable.</p>\n<p>然而在18世纪，随着键盘乐器变得更流行，它的受欢迎程度逐渐下降。</p>\n<p>Nevertheless, for those interested in the practice of early music, it remains an important subject of study, and today it is still frequently featured in historically informed concerts.</p>\n<p>尽管如此，对于那些对早期音乐实践感兴趣的人来说，它仍然是一个重要的研究课题，如今它仍然经常出现在历史知情音乐会中。</p>",
+      "analysis_html": "<p>1、played</p>\n<p>考点：时态语态</p>\n<p>解析： 空格位于 that 引导的定语从句中作谓语动词，修饰先行词 instrument。后面紧跟的时间状语是 “from the late Middle Ages to the Baroque period（从欧洲中世纪晚期到巴洛克时期）”。这是一个已经完全结束的历史时期。在时态语态要求下，陈述历史事实必须使用一般过去时。结合固定搭配 play a role in（在……中发挥作用），此处选用一般过去时形式的 played。</p>\n<p>2、made</p>\n<p>考点：单句理解</p>\n<p>解析： 分析本句结构：Its pear-shaped body and fretted neck ______ it a versatile instrument...。此处需要一个及物动词充当谓语，并能接复合宾语（即“动词 + 宾语 it + 宾语补足语 a versatile instrument” 结构）。根据单句内部的使动因果逻辑，是它梨形的外观和有品格的琴颈“使得”它成为了一种多功能的乐器。在选项中，只有过去时动词 made（使得/让……成为） 完美契合这一使动用法。</p>\n<p>3、produce</p>\n<p>考点：时态语态</p>\n<p>解析： 空格位于 which 引导的定语从句中作谓语动词，修饰复数先行词 courses of paired strings（复数的琴弦组合）。这里是在陈述鲁特琴自身的物理结构所带来的声音特性。由于是在客观描述该乐器长久以来的自然属性，必须使用一般现在时；且由于先行词是复数，谓语动词必须使用原形。因此选用 produce（产生/发出） 满足时态语态的主谓一致要求。</p>\n<p>4、became</p>\n<p>考点：时态语态</p>\n<p>解析： 空格位于时间状语从句 as keyboard instruments ______ more fashionable 中作谓语。前文有明确的时间线索 “In the 18th century（在18世纪）”，这属于过去已经发生并结束的事实，因此该分句的谓语必须严格锁定在一般过去时。结合后接的形容词表语 fashionable（时髦的），选用过去时系动词 became（变得） 完美匹配。</p>\n<p>5、is</p>\n<p>考点：时态语态</p>\n<p>解析： 空格位于最后一个并列分句中，主语是单数代词 it（指代鲁特琴）。本句带有明确的当代时间标志词 “today（在今天）” 和 “still（仍然）”，且后接过去分词 featured 构成被动语态（is featured in... 被列为……的特色）。在时间线索与主谓单复数的一致性约束下，必须选用一般现在时的单数系动词 is。</p>",
+      "translation_html": "<p>The lute is a plucked string instrument that played a central role in European music from the late Middle Ages to the Baroque period.</p>\n<p>鲁特琴是一种拨弦乐器，从中世纪晚期到巴洛克时期，它在欧洲音乐中发挥了核心作用。</p>\n<p>Its pear-shaped body and fretted neck made it a versatile instrument, suitable both for solo performance and for ensemble playing.</p>\n<p>其梨形琴身和带品琴颈使它成为一种多功能乐器，既适合独奏，也适合合奏。</p>\n<p>Unlike the modern guitar, the lute usually has courses of paired strings, which produce a richer and more resonant sound.</p>\n<p>与现代吉他不同，鲁特琴通常有多组成对的琴弦，能够产生更丰富、更有共鸣感的声音。</p>\n<p>During the Renaissance, it was highly valued by both professional musicians and amateur players.</p>\n<p>在文艺复兴时期，它同时受到专业音乐家和业余演奏者的高度重视。</p>\n<p>In the 18th century, however, its popularity gradually declined as keyboard instruments became more fashionable.</p>\n<p>然而，到18世纪，随着键盘乐器变得更加时髦，鲁特琴的流行度逐渐下降。</p>\n<p>Nevertheless, for those interested in the practice of early music, it remains an important subject of study, and today it is still frequently featured in historically informed concerts.</p>\n<p>尽管如此，对于那些对早期音乐实践感兴趣的人来说，它仍然是一个重要的研究课题，如今也仍经常出现在遵循历史演奏法的音乐会中。</p>",
       "blanks": [
         {
           "blank_index": 1,
-          "label": "语法结构",
-          "answer": "is",
-          "options": [
-            "made",
-            "has",
-            "became",
-            "changed",
-            "is",
-            "record",
-            "produce",
-            "played"
-          ],
-          "explanation": "空格位于“The lute is a plucked string instrument that ______ a central role”。此处为定语从句，主语 that 指代 instrument（单数），描述事实应用一般现在时。play a central role 是固定搭配，play 应用第三人称单数 plays，但选项中没有 plays，而 is 可以理解为“it is a central role”的逻辑不成立。然而题目给出的答案为 is——这意味着“play a role”本身是固定搭配，而在此处“that is a central role”虽看似不自然，但结合题目答案应为 is，表示“鲁特琴在音乐中扮演中心角色”——实际上应填 plays，但既然指定答案为 is，则按题处理。因此填 is。"
-        },
-        {
-          "blank_index": 2,
-          "label": "自动诊断",
+          "label": "时态语态",
           "answer": "played",
           "options": [
             "made",
@@ -20969,11 +20953,11 @@ window.QUESTIONS_DATA = {
             "produce",
             "played"
           ],
-          "explanation": ""
+          "explanation": "空格位于 that 引导的定语从句中作谓语动词，修饰先行词 instrument。后面紧跟的时间状语是 “from the late Middle Ages to the Baroque period（从欧洲中世纪晚期到巴洛克时期）”。这是一个已经完全结束的历史时期。在时态语态要求下，陈述历史事实必须使用一般过去时。结合固定搭配 play a role in（在……中发挥作用），此处选用一般过去时形式的 played。"
         },
         {
-          "blank_index": 3,
-          "label": "语法结构",
+          "blank_index": 2,
+          "label": "单句理解",
           "answer": "made",
           "options": [
             "made",
@@ -20985,11 +20969,11 @@ window.QUESTIONS_DATA = {
             "produce",
             "played"
           ],
-          "explanation": "空格位于“fretted neck ______ it a versatile instrument”。此处需要谓语动词，主语 neck 为单数。made it a versatile instrument 意为“使其成为一种多功能的乐器”，made 为 make 的过去式，表示其结构特征使它具备了多功能性。其他选项中，has it a... 为疑问语序，不符合陈述句；changed it a... 搭配不当。因此填 made。"
+          "explanation": "分析本句结构：Its pear-shaped body and fretted neck ______ it a versatile instrument...。此处需要一个及物动词充当谓语，并能接复合宾语（即“动词 + 宾语 it + 宾语补足语 a versatile instrument” 结构）。根据单句内部的使动因果逻辑，是它梨形的外观和有品格的琴颈“使得”它成为了一种多功能的乐器。在选项中，只有过去时动词 made（使得/让……成为） 完美契合这一使动用法。"
         },
         {
-          "blank_index": 4,
-          "label": "单句理解",
+          "blank_index": 3,
+          "label": "时态语态",
           "answer": "produce",
           "options": [
             "made",
@@ -21001,11 +20985,11 @@ window.QUESTIONS_DATA = {
             "produce",
             "played"
           ],
-          "explanation": "空格位于“paired strings, which ______ a richer and more resonant sound”。produce 意为“产生/发出”，指琴弦产生更丰富、更具共鸣的声音。定语从句主语 which 指代 strings（复数），一般现在时用 produce。record 意为“录制”，与“声音的产生”无关。因此填 produce。"
+          "explanation": "空格位于 which 引导的定语从句中作谓语动词，修饰复数先行词 courses of paired strings（复数的琴弦组合）。这里是在陈述鲁特琴自身的物理结构所带来的声音特性。由于是在客观描述该乐器长久以来的自然属性，必须使用一般现在时；且由于先行词是复数，谓语动词必须使用原形。因此选用 produce（产生/发出） 满足时态语态的主谓一致要求。"
         },
         {
-          "blank_index": 5,
-          "label": "单句理解",
+          "blank_index": 4,
+          "label": "时态语态",
           "answer": "became",
           "options": [
             "made",
@@ -21017,7 +21001,23 @@ window.QUESTIONS_DATA = {
             "produce",
             "played"
           ],
-          "explanation": "空格位于“as keyboard instruments ______ more fashionable”。became 意为“变得”，表示键盘乐器变得更流行。句意是“18世纪，随着键盘乐器变得更流行，鲁特琴的受欢迎程度逐渐下降”。changed 意为“改变”，不能直接接 more fashionable（需加 to）；has 与 more fashionable 不搭配。因此填 became。"
+          "explanation": "空格位于时间状语从句 as keyboard instruments ______ more fashionable 中作谓语。前文有明确的时间线索 “In the 18th century（在18世纪）”，这属于过去已经发生并结束的事实，因此该分句的谓语必须严格锁定在一般过去时。结合后接的形容词表语 fashionable（时髦的），选用过去时系动词 became（变得） 完美匹配。"
+        },
+        {
+          "blank_index": 5,
+          "label": "时态语态",
+          "answer": "is",
+          "options": [
+            "made",
+            "has",
+            "became",
+            "changed",
+            "is",
+            "record",
+            "produce",
+            "played"
+          ],
+          "explanation": "空格位于最后一个并列分句中，主语是单数代词 it（指代鲁特琴）。本句带有明确的当代时间标志词 “today（在今天）” 和 “still（仍然）”，且后接过去分词 featured 构成被动语态（is featured in... 被列为……的特色）。在时间线索与主谓单复数的一致性约束下，必须选用一般现在时的单数系动词 is。"
         }
       ],
       "id": "fib-r-june-lower-supplement-1195"
@@ -31801,3 +31801,4 @@ window.QUESTIONS_DATA = {
     }
   ]
 };
+window.QUESTIONS = window.PTE_QUESTIONS_DATA;
